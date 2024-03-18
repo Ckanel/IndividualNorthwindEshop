@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using IndividualNorthwindEshop.Models;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 namespace IndividualNorthwindEshop.Data;
 
-public partial class MasterContext : DbContext
+public partial class MasterContext : IdentityDbContext<User>
 {
     public MasterContext()
     {
@@ -76,6 +76,7 @@ public partial class MasterContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<AlphabeticalListOfProduct>(entity =>
         {
             entity
@@ -147,7 +148,11 @@ public partial class MasterContext : DbContext
             entity.Property(e => e.Phone).HasMaxLength(24);
             entity.Property(e => e.PostalCode).HasMaxLength(10);
             entity.Property(e => e.Region).HasMaxLength(15);
-
+            entity.HasOne(d => d.User)
+      .WithOne(p => p.Customer)
+      .HasForeignKey<Customer>(c => c.UserId)
+      .OnDelete(DeleteBehavior.Cascade)
+      .HasConstraintName("FK_Customers_Users");
             entity.HasMany(d => d.CustomerTypes).WithMany(p => p.Customers)
                 .UsingEntity<Dictionary<string, object>>(
                     "CustomerCustomerDemo",
@@ -171,7 +176,9 @@ public partial class MasterContext : DbContext
                             .HasMaxLength(10)
                             .IsFixedLength()
                             .HasColumnName("CustomerTypeID");
+
                     });
+
         });
 
         modelBuilder.Entity<CustomerAndSuppliersByCity>(entity =>
@@ -226,7 +233,11 @@ public partial class MasterContext : DbContext
             entity.HasOne(d => d.ReportsToNavigation).WithMany(p => p.InverseReportsToNavigation)
                 .HasForeignKey(d => d.ReportsTo)
                 .HasConstraintName("FK_Employees_Employees");
-
+            entity.HasOne(d => d.User)
+        .WithOne(p => p.Employee)
+        .HasForeignKey<Employee>(e => e.UserId)
+        .OnDelete(DeleteBehavior.Cascade)
+        .HasConstraintName("FK_Employees_Users");
             entity.HasMany(d => d.Territories).WithMany(p => p.Employees)
                 .UsingEntity<Dictionary<string, object>>(
                     "EmployeeTerritory",

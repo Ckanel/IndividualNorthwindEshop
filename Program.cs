@@ -1,6 +1,9 @@
 using IndividualNorthwindEshop.Data;
 using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Services;
+using IndividualNorthwindEshop.Models;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace IndividualNorthwindEshop
 {
@@ -12,8 +15,22 @@ namespace IndividualNorthwindEshop
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddRazorPages();
             builder.Services.AddDbContext<MasterContext>(options =>
                            options.UseSqlServer(builder.Configuration.GetConnectionString("Northwind")));
+
+           
+
+      
+
+            //builder.Services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<MasterContext>();
+            //       builder.Services.AddIdentityCore<User>()
+            //.AddRoles<IdentityRole>()
+            //.AddEntityFrameworkStores<MasterContext>();
+            builder.Services.AddIdentity<User, IdentityRole>()
+     .AddEntityFrameworkStores<MasterContext>();
+
+            builder.Services.AddSingleton<IEmailSender, EmailSender>();
             builder.Services.AddScoped<IOle78DecryptionService, Ole78DecryptionService>();
             var app = builder.Build();
 
@@ -35,7 +52,7 @@ namespace IndividualNorthwindEshop
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
-
+            app.MapRazorPages();    
             app.Run();
         }
     }

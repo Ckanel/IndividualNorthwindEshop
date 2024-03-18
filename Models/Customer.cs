@@ -6,7 +6,7 @@ namespace IndividualNorthwindEshop.Models;
 public partial class Customer
 {
     public string CustomerId { get; set; } = null!;
-    public int UserId { get; set; }
+    public string UserId { get; set; }
 
     public string CompanyName { get; set; } = null!;
 

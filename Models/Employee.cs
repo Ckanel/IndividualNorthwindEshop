@@ -48,6 +48,6 @@ public partial class Employee
     public virtual Employee? ReportsToNavigation { get; set; }
 
     public virtual ICollection<Territory> Territories { get; set; } = new List<Territory>();
-    public int UserId { get; set; } 
+    public string UserId { get; set; } 
     public virtual User User { get; set; }
 }
