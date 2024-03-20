@@ -4,16 +4,19 @@ using IndividualNorthwindEshop.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace IndividualNorthwindEshop.Migrations
+namespace IndividualNorthwindEshop.Migrations.UserRelationships
 {
     [DbContext(typeof(MasterContext))]
-    partial class MasterContextModelSnapshot : ModelSnapshot
+    [Migration("20240320101147_AddUserRelationships")]
+    partial class AddUserRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,50 +114,6 @@ namespace IndividualNorthwindEshop.Migrations
                     b.ToTable((string)null);
 
                     b.ToView("Alphabetical list of products", (string)null);
-                });
-
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.Cart", b =>
-                {
-                    b.Property<int>("CartId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartId"));
-
-                    b.Property<string>("CustomerId")
-                        .HasColumnType("nchar(5)");
-
-                    b.HasKey("CartId");
-
-                    b.HasIndex("CustomerId");
-
-                    b.ToTable("Carts");
-                });
-
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.CartItem", b =>
-                {
-                    b.Property<int>("CartItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartItemId"));
-
-                    b.Property<int>("CartId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartItemId");
-
-                    b.HasIndex("CartId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("CartItems");
                 });
 
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Category", b =>
@@ -265,7 +224,14 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("CustomerId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.HasIndex(new[] { "City" }, "City");
 
@@ -396,9 +362,16 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasMaxLength(25)
                         .HasColumnType("nvarchar(25)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("EmployeeId");
 
                     b.HasIndex("ReportsTo");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.HasIndex(new[] { "LastName" }, "LastName");
 
@@ -1140,7 +1113,7 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CustomerId")
-                        .HasColumnType("nchar(5)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -1186,14 +1159,6 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CustomerId")
-                        .IsUnique()
-                        .HasFilter("[CustomerId] IS NOT NULL");
-
-                    b.HasIndex("EmployeeId")
-                        .IsUnique()
-                        .HasFilter("[EmployeeId] IS NOT NULL");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -1369,32 +1334,16 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasConstraintName("FK_EmployeeTerritories_Territories");
                 });
 
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.Cart", b =>
+            modelBuilder.Entity("IndividualNorthwindEshop.Models.Customer", b =>
                 {
-                    b.HasOne("IndividualNorthwindEshop.Models.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId");
-
-                    b.Navigation("Customer");
-                });
-
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.CartItem", b =>
-                {
-                    b.HasOne("IndividualNorthwindEshop.Models.Cart", "Cart")
-                        .WithMany("CartItems")
-                        .HasForeignKey("CartId")
+                    b.HasOne("IndividualNorthwindEshop.Models.User", "User")
+                        .WithOne("Customer")
+                        .HasForeignKey("IndividualNorthwindEshop.Models.Customer", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_Customers_Users");
 
-                    b.HasOne("IndividualNorthwindEshop.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Cart");
-
-                    b.Navigation("Product");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Employee", b =>
@@ -1404,7 +1353,16 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasForeignKey("ReportsTo")
                         .HasConstraintName("FK_Employees_Employees");
 
+                    b.HasOne("IndividualNorthwindEshop.Models.User", "User")
+                        .WithOne("Employee")
+                        .HasForeignKey("IndividualNorthwindEshop.Models.Employee", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_Employees_Users");
+
                     b.Navigation("ReportsToNavigation");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Order", b =>
@@ -1478,25 +1436,6 @@ namespace IndividualNorthwindEshop.Migrations
                     b.Navigation("Region");
                 });
 
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.User", b =>
-                {
-                    b.HasOne("IndividualNorthwindEshop.Models.Customer", "Customer")
-                        .WithOne("User")
-                        .HasForeignKey("IndividualNorthwindEshop.Models.User", "CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("FK_Users_Customers");
-
-                    b.HasOne("IndividualNorthwindEshop.Models.Employee", "Employee")
-                        .WithOne("User")
-                        .HasForeignKey("IndividualNorthwindEshop.Models.User", "EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("FK_Users_Employees");
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Employee");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1548,11 +1487,6 @@ namespace IndividualNorthwindEshop.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("IndividualNorthwindEshop.Models.Cart", b =>
-                {
-                    b.Navigation("CartItems");
-                });
-
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Category", b =>
                 {
                     b.Navigation("Products");
@@ -1561,9 +1495,6 @@ namespace IndividualNorthwindEshop.Migrations
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Customer", b =>
                 {
                     b.Navigation("Orders");
-
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Employee", b =>
@@ -1571,9 +1502,6 @@ namespace IndividualNorthwindEshop.Migrations
                     b.Navigation("InverseReportsToNavigation");
 
                     b.Navigation("Orders");
-
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Order", b =>
@@ -1599,6 +1527,15 @@ namespace IndividualNorthwindEshop.Migrations
             modelBuilder.Entity("IndividualNorthwindEshop.Models.Supplier", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("IndividualNorthwindEshop.Models.User", b =>
+                {
+                    b.Navigation("Customer")
+                        .IsRequired();
+
+                    b.Navigation("Employee")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

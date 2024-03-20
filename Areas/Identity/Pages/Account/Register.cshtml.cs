@@ -19,6 +19,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using IndividualNorthwindEshop.Data;
+using System.Security.Claims;
 
 namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
 {
@@ -30,13 +33,15 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<User> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly MasterContext _context;
 
         public RegisterModel(
             UserManager<User> userManager,
             IUserStore<User> userStore,
             SignInManager<User> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            MasterContext context)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -44,6 +49,7 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _context= context;
         }
 
         /// <summary>
@@ -79,7 +85,10 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
-
+            // added companyname
+            [Required]
+            [Display(Name = "Company Name")]
+            public string CompanyName { get; set; }
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
@@ -100,13 +109,6 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
             public string ConfirmPassword { get; set; }
         }
 
-
-        public async Task OnGetAsync(string returnUrl = null)
-        {
-            ReturnUrl = returnUrl;
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        }
-
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
@@ -117,11 +119,36 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+                // Generate a unique customer ID based on the company name
+                string customerId = GenerateCustomerId(Input.CompanyName);
+
+                // Create a new customer record
+                var customer = new Customer
+                {
+                    CustomerId = customerId,
+                    CompanyName = Input.CompanyName,
+                    // Set other customer properties based on the registration form input
+                    // For example: ContactName, Address, etc.
+                };
+
+                // Associate the customer with the user
+                user.Customer = customer;
+
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+                    await _userManager.AddToRoleAsync(user, "Customer");
+                    await _userManager.AddClaimAsync(user, new Claim("CustomerId", customerId));
+                    // Create a new cart and associate it with the customer
+                    var cart = new Cart
+                    {
+                        CustomerId = customerId
+                    };
+                    _context.Carts.Add(cart);
+                    await _context.SaveChangesAsync();
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -142,7 +169,8 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                     else
                     {
                         await _signInManager.SignInAsync(user, isPersistent: false);
-                        return LocalRedirect(returnUrl);
+                        TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
+                        return LocalRedirect(returnUrl ?? Url.Content("~/"));
                     }
                 }
                 foreach (var error in result.Errors)
@@ -154,6 +182,46 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
             // If we got this far, something failed, redisplay form
             return Page();
         }
+
+
+
+        private string GenerateCustomerId(string companyName)
+        {
+            string customerId = string.Empty;
+
+            // Extract the first five uppercase letters from the company name
+            foreach (char c in companyName)
+            {
+                if (char.IsUpper(c))
+                {
+                    customerId += c;
+                    if (customerId.Length == 5)
+                        break;
+                }
+            }
+
+            // If the company name has less than five uppercase letters, append random characters
+            if (customerId.Length < 5)
+            {
+                Random random = new Random();
+                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                customerId += new string(Enumerable.Repeat(chars, 5 - customerId.Length)
+                    .Select(s => s[random.Next(s.Length)]).ToArray());
+            }
+
+            // Check if the generated customer ID already exists in the database
+            while (_context.Customers.Any(c => c.CustomerId == customerId))
+            {
+                // If the customer ID already exists, append a unique identifier
+                customerId += Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
+            }
+
+            return customerId;
+        }
+
+
+
+
 
         private User CreateUser()
         {

@@ -67,6 +67,10 @@
         </dd>
     </dl>
 </div>
+<form asp-controller="Cart" asp-action="AddToCart" method="post">
+    <input type="hidden" name="productId" value="@Model.ProductId" />
+    <button type="submit" class="btn btn-primary">Add to Cart</button>
+</form>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.ProductId">Edit</a> |
     <a asp-action="Index">Back to List</a>

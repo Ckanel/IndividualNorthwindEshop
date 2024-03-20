@@ -70,7 +70,8 @@ public partial class MasterContext : IdentityDbContext<User>
 
     public virtual DbSet<Territory> Territories { get; set; }
     public DbSet<User> Users { get; set; }
-
+    public DbSet<Cart> Carts { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
 
 
 
@@ -91,6 +92,19 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.Property(e => e.SupplierId).HasColumnName("SupplierID");
             entity.Property(e => e.UnitPrice).HasColumnType("money");
         });
+        modelBuilder.Entity<User>()
+     .HasOne(u => u.Customer)
+     .WithOne(c => c.User)
+     .HasForeignKey<User>(u => u.CustomerId)
+     .OnDelete(DeleteBehavior.Cascade)
+     .HasConstraintName("FK_Users_Customers");
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Employee)
+            .WithOne(e => e.User)
+            .HasForeignKey<User>(u => u.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("FK_Users_Employees");
 
         modelBuilder.Entity<Category>(entity =>
         {
@@ -148,11 +162,7 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.Property(e => e.Phone).HasMaxLength(24);
             entity.Property(e => e.PostalCode).HasMaxLength(10);
             entity.Property(e => e.Region).HasMaxLength(15);
-            entity.HasOne(d => d.User)
-      .WithOne(p => p.Customer)
-      .HasForeignKey<Customer>(c => c.UserId)
-      .OnDelete(DeleteBehavior.Cascade)
-      .HasConstraintName("FK_Customers_Users");
+           
             entity.HasMany(d => d.CustomerTypes).WithMany(p => p.Customers)
                 .UsingEntity<Dictionary<string, object>>(
                     "CustomerCustomerDemo",
@@ -233,11 +243,7 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.HasOne(d => d.ReportsToNavigation).WithMany(p => p.InverseReportsToNavigation)
                 .HasForeignKey(d => d.ReportsTo)
                 .HasConstraintName("FK_Employees_Employees");
-            entity.HasOne(d => d.User)
-        .WithOne(p => p.Employee)
-        .HasForeignKey<Employee>(e => e.UserId)
-        .OnDelete(DeleteBehavior.Cascade)
-        .HasConstraintName("FK_Employees_Users");
+          
             entity.HasMany(d => d.Territories).WithMany(p => p.Employees)
                 .UsingEntity<Dictionary<string, object>>(
                     "EmployeeTerritory",
@@ -259,7 +265,34 @@ public partial class MasterContext : IdentityDbContext<User>
                             .HasColumnName("TerritoryID");
                     });
         });
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.HasKey(e => e.CartId);
 
+            entity.Property(e => e.CustomerId)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .IsRequired(false);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId);
+        });
+
+
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.HasKey(e => e.CartItemId);
+
+            entity.HasOne(e => e.Cart)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(e => e.CartId);
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId);
+        });
         modelBuilder.Entity<Invoice>(entity =>
         {
             entity

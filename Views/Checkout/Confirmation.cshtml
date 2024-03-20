@@ -1,0 +1,37 @@
+﻿@model IndividualNorthwindEshop.Models.Order
+
+<h2>Order Confirmation</h2>
+
+<p>Thank you for your order!</p>
+
+<h3>Order Details</h3>
+<p>Order ID: @Model.OrderId</p>
+<p>Customer ID: @Model.CustomerId</p>
+<p>Ship Name: @Model.ShipName</p>
+<p>Ship Address: @Model.ShipAddress</p>
+<p>Ship City: @Model.ShipCity</p>
+<p>Ship Country: @Model.ShipCountry</p>
+<p>Ship Postal Code: @Model.ShipPostalCode</p>
+<!-- Display other relevant order details -->
+
+<h3>Order Items</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.OrderDetails)
+        {
+            <tr>
+                <td>@item.Product.ProductName</td>
+                <td>@item.Quantity</td>
+                <td>@item.UnitPrice</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
