@@ -4,7 +4,8 @@
     ViewData["Title"] = "Index";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
+@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+{
 <h1>Index</h1>
 
 <p>
@@ -88,3 +89,4 @@
 }
     </tbody>
 </table>
+}
