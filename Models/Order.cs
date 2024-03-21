@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace IndividualNorthwindEshop.Models;
 
@@ -32,7 +33,9 @@ public partial class Order
     public string? ShipPostalCode { get; set; }
 
     public string? ShipCountry { get; set; }
-    //public string? GuestEmail { get; set; }
+    [MaxLength(100)]
+    [EmailAddress]
+    public string? GuestEmail { get; set; }
     public virtual Customer? Customer { get; set; }
 
     public virtual Employee? Employee { get; set; }

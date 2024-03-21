@@ -28,6 +28,16 @@ namespace IndividualNorthwindEshop.Migrations.UserRelationships
                          principalColumn: "CustomerId",
                          onDelete: ReferentialAction.Restrict);
                  });
+            migrationBuilder.AlterColumn<string>(
+                name: "CustomerId",
+                table: "Carts",
+                type: "char(5)",
+                unicode: false,
+                maxLength: 5,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "nchar(5)",
+                oldNullable: true);
 
             migrationBuilder.CreateTable(
                 name: "CartItems",

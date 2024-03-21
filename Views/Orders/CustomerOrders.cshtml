@@ -1,0 +1,47 @@
+﻿@model List<MyOrdersViewModel>
+
+<h2>My Orders</h2>
+
+@if (Model.Count > 0)
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Order Date</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total Price</th>
+                <th>Ship Address</th>
+                <th>Ship City</th>
+                <th>Ship Postal Code</th>
+                <th>Ship Country</th>
+                <th>Guest Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@order.OrderDate</td>
+                    <td>@order.ProductName</td>
+                    <td>@order.Quantity</td>
+                    <td>@order.UnitPrice</td>
+                    <td>@order.TotalPrice</td>
+                    <td>@order.ShipAddress</td>
+                    <td>@order.ShipCity</td>
+                    <td>@order.ShipPostalCode</td>
+                    <td>@order.ShipCountry</td>
+                    <td>@order.GuestEmail</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No orders found.</p>
+}
+

@@ -69,6 +69,7 @@ public partial class MasterContext : IdentityDbContext<User>
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
     public virtual DbSet<Territory> Territories { get; set; }
+    
     public DbSet<User> Users { get; set; }
     public DbSet<Cart> Carts { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
@@ -364,7 +365,8 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.Property(e => e.ShipPostalCode).HasMaxLength(10);
             entity.Property(e => e.ShipRegion).HasMaxLength(15);
             entity.Property(e => e.ShippedDate).HasColumnType("datetime");
-
+            entity.Property(e => e.GuestEmail)
+           .HasMaxLength(100);
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
                 .HasConstraintName("FK_Orders_Customers");

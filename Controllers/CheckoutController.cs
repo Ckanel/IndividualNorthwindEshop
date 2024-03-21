@@ -58,7 +58,7 @@ namespace IndividualNorthwindEshop.Controllers
             {
                 CustomerId = cart.CustomerId,
                 OrderDate = DateTime.Now,
-               
+                GuestEmail = model.GuestEmail,
                 ShipName = model.CustomerName,
                 ShipAddress = model.Address,
                 ShipCity = model.City,

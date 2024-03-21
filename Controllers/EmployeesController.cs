@@ -9,9 +9,11 @@ using IndividualNorthwindEshop.Models;
 using IndividualNorthwindEshop.Data;
 using System.Diagnostics;
 using IndividualNorthwindEshop.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers
 {
+    [Authorize(Roles = "Manager")]
     public class EmployeesController : Controller
     {
         private readonly MasterContext _context;

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Data;
 using IndividualNorthwindEshop.Models;
 using IndividualNorthwindEshop.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -22,12 +23,14 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Categories
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Categories.ToListAsync());
         }
 
         // GET: Categories/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -44,6 +47,7 @@ namespace IndividualNorthwindEshop.Controllers
 
             return View(category);
         }
+        [AllowAnonymous]
         public IActionResult GetEmployeePhoto(int id)
         {
             var employee = _context.Categories.FirstOrDefault(e => e.CategoryId == id);
@@ -66,6 +70,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Categories/Create
+        [Authorize(Roles = "Employee,Manager")]
         public IActionResult Create()
         {
             return View();
@@ -73,10 +78,11 @@ namespace IndividualNorthwindEshop.Controllers
 
         // POST: Categories/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // For more details, see 
        
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Create([Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
         {
             if (ModelState.IsValid)
@@ -99,6 +105,7 @@ namespace IndividualNorthwindEshop.Controllers
 
 
         // GET: Categories/Edit/5
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -116,9 +123,10 @@ namespace IndividualNorthwindEshop.Controllers
 
         // POST: Categories/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description,Picture")] Category category)
         {
             if (id != category.CategoryId)
@@ -150,6 +158,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Categories/Delete/5
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -170,6 +179,7 @@ namespace IndividualNorthwindEshop.Controllers
         // POST: Categories/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var category = await _context.Categories.FindAsync(id);

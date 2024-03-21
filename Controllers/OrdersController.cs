@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Models;
 using IndividualNorthwindEshop.Data;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -20,6 +22,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Orders
+        [Authorize(Roles="Manager,Employee")]
         public async Task<IActionResult> Index()
         {
             var masterContext = _context.Orders.Include(o => o.Customer).Include(o => o.Employee).Include(o => o.ShipViaNavigation);
@@ -27,6 +30,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Orders/Details/5
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -48,6 +52,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Orders/Create
+        [Authorize(Roles = "Manager,Employee")]
         public IActionResult Create()
         {
             ViewData["CustomerId"] = new SelectList(_context.Customers, "CustomerId", "CustomerId");
@@ -61,6 +66,7 @@ namespace IndividualNorthwindEshop.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Create([Bind("OrderId,CustomerId,EmployeeId,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry")] Order order)
         {
             if (ModelState.IsValid)
@@ -76,6 +82,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Orders/Edit/5
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -99,6 +106,7 @@ namespace IndividualNorthwindEshop.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Edit(int id, [Bind("OrderId,CustomerId,EmployeeId,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry")] Order order)
         {
             if (id != order.OrderId)
@@ -133,6 +141,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Orders/Delete/5
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -156,6 +165,7 @@ namespace IndividualNorthwindEshop.Controllers
         // POST: Orders/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var order = await _context.Orders.FindAsync(id);
@@ -171,6 +181,32 @@ namespace IndividualNorthwindEshop.Controllers
         private bool OrderExists(int id)
         {
             return _context.Orders.Any(e => e.OrderId == id);
+        }
+        //Customer Orders 
+        [Authorize(Roles = "Customer")]
+        public IActionResult CustomerOrders()
+        {
+            var customerId = User.FindFirstValue("CustomerId");
+
+            var myOrders = _context.Orders
+                .Where(o => o.CustomerId == customerId)
+                .Select(o => new MyOrdersViewModel
+                {
+                    OrderId = o.OrderId,
+                    OrderDate = (DateTime)o.OrderDate,
+                    ProductName = o.OrderDetails.First().Product.ProductName,
+                    Quantity = o.OrderDetails.First().Quantity,
+                    UnitPrice = o.OrderDetails.First().UnitPrice,
+                    TotalPrice = o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity),
+                    ShipAddress = o.ShipAddress,
+                    ShipCity = o.ShipCity,
+                    ShipPostalCode = o.ShipPostalCode,
+                    ShipCountry = o.ShipCountry,
+                    GuestEmail = o.GuestEmail
+                })
+                .ToList();
+
+            return View(myOrders);
         }
     }
 }

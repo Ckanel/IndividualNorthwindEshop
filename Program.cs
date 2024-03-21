@@ -50,6 +50,10 @@ namespace IndividualNorthwindEshop
                     {
                         await roleManager.CreateAsync(new IdentityRole("Employee"));
                     }
+                    if (!await roleManager.RoleExistsAsync("Manager"))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole("Manager"));
+                    }
                 }
                 // Configure the HTTP request pipeline.
                 if (!app.Environment.IsDevelopment())
