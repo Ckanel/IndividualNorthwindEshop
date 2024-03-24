@@ -22,6 +22,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Data;
 using System.Security.Claims;
+using Azure.Core;
+using IndividualNorthwindEshop.Services;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using System.Security.Policy;
 
 namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
 {
@@ -77,124 +82,187 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
         /// </summary>
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
-            // added companyname
-            [Required]
-            [Display(Name = "Company Name")]
-            public string CompanyName { get; set; }
-            //used for manager creation 
-            //public string LastName { get; set; }
-            //public string FirstName { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
             [DataType(DataType.Password)]
             [Display(Name = "Password")]
             public string Password { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [DataType(DataType.Password)]
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
+
+            [Display(Name = "Company Name")]
+            public string CompanyName { get; set; }
+            [Display(Name = "Contact Name")]
+            public string ContactName { get; set; }
+
+            [Display(Name = "Contact Title")]
+            public string ContactTitle { get; set; }
+
+            [Display(Name = "First Name")]
+            public string FirstName { get; set; }
+
+            [Display(Name = "Last Name")]
+            public string LastName { get; set; }
+
+            [Required]
+            [Display(Name = "Address")]
+            public string Address { get; set; }
+
+            [Required]
+            [Display(Name = "City")]
+            public string City { get; set; }
+
+            [Required]
+            [Display(Name = "Postal Code")]
+            public string PostalCode { get; set; }
+
+            [Required]
+            [Display(Name = "Country")]
+            public string Country { get; set; }
+
+            [Required]
+            [Phone]
+            [Display(Name = "Phone")]
+            public string Phone { get; set; }
         }
+
+
+
+
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+    {
+        returnUrl ??= Url.Content("~/");
+        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        if (ModelState.IsValid)
         {
-            returnUrl ??= Url.Content("~/");
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-            if (ModelState.IsValid)
-            {
-                var user = CreateUser();
+            var user = CreateUser();
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+            await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+            await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+                var userType = Request.Form["userType"].ToString();
 
-                // Generate a unique customer ID based on the company name
-                string customerId = GenerateCustomerId(Input.CompanyName);
+                // Generate a unique customer ID based on the user type
+                string customerId = userType == "business"
+                ? GenerateCustomerId(Input.CompanyName)
+                : GenerateCustomerId("CUSTOMER");
+
+
+
+                // Generate a unique customer ID based on the user type
+
+
+
 
                 // Create a new customer record
-                var customer = new Customer
+
+
+                if (userType == "business")
                 {
-                    CustomerId = customerId,
-                    CompanyName = Input.CompanyName,
-                    // Set other customer properties based on the registration form input
-                    // For example: ContactName, Address, etc.
-                };
-
-                // Associate the customer with the user
-                user.Customer = customer;
-
-                var result = await _userManager.CreateAsync(user, Input.Password);
-
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("User created a new account with password.");
-                    await _userManager.AddToRoleAsync(user, "Customer");
-                    await _userManager.AddClaimAsync(user, new Claim("CustomerId", customerId));
-                    // Create a new cart and associate it with the customer
-                    var cart = new Cart
+                    // Store the company name in the business table
+                    var business = new Customer
                     {
-                        CustomerId = customerId
+                        CustomerId = customerId,
+                        CompanyName = Input.CompanyName,
+                        ContactName = Input.ContactName,
+                        ContactTitle = Input.ContactTitle,
+                        Address = Input.Address,
+                        City = Input.City,
+                        PostalCode = Input.PostalCode,
+                        Country = Input.Country,
+                        Phone = Input.Phone
                     };
-                    _context.Carts.Add(cart);
-                    await _context.SaveChangesAsync();
-
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
-                        "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
-
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                        $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                    if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                    {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-                    }
-                    else
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
-                        TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
-                        return LocalRedirect(returnUrl ?? Url.Content("~/"));
-                    }
+                    user.Customer = business;
                 }
-                foreach (var error in result.Errors)
+                else if (userType == "customer")
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    // Store the user type in the CompanyName column of the customer table
+                    var customer = new Customer
+                    {
+                        CustomerId = customerId,
+                        CompanyName = userType,
+                        ContactName = Input.FirstName + " " + Input.LastName,
+                        ContactTitle = null,
+                        Address = Input.Address,
+                        City = Input.City,
+                        PostalCode = Input.PostalCode,
+                        Country = Input.Country,
+                        Phone = Input.Phone
+                    };
+
+                    user.Customer = customer;
+                }
+
+          
+
+            var result = await _userManager.CreateAsync(user, Input.Password);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("User created a new account with password.");
+                await _userManager.AddToRoleAsync(user, "Customer");
+                await _userManager.AddClaimAsync(user, new Claim("CustomerId", customerId));
+
+                // Create a new cart and associate it with the customer
+                var cart = new Cart
+                {
+                    CustomerId = customerId
+                };
+                _context.Carts.Add(cart);
+                await _context.SaveChangesAsync();
+
+                var userId = await _userManager.GetUserIdAsync(user);
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+                var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                    values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+                    protocol: Request.Scheme);
+
+                await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
+                    $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+                if (_userManager.Options.SignIn.RequireConfirmedAccount)
+                {
+                    return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+                }
+                else
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
+                    return LocalRedirect(returnUrl ?? Url.Content("~/"));
                 }
             }
-
-            // If we got this far, something failed, redisplay form
-            return Page();
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
         }
 
+        // If we got this far, something failed, redisplay form
+        return Page();
+    }
 
 
-        private string GenerateCustomerId(string companyName)
+
+
+    private string GenerateCustomerId(string input)
+    {
+        string customerId = string.Empty;
+
+        if (!string.IsNullOrEmpty(input))
         {
-            string customerId = string.Empty;
-
-            // Extract the first five uppercase letters from the company name
-            foreach (char c in companyName)
+            // Extract the first five uppercase letters from the input
+            foreach (char c in input)
             {
                 if (char.IsUpper(c))
                 {
@@ -203,101 +271,107 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                         break;
                 }
             }
-
-            // If the company name has less than five uppercase letters, append random characters
-            if (customerId.Length < 5)
-            {
-                Random random = new Random();
-                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                customerId += new string(Enumerable.Repeat(chars, 5 - customerId.Length)
-                    .Select(s => s[random.Next(s.Length)]).ToArray());
-            }
-
-            // Check if the generated customer ID already exists in the database
-            while (_context.Customers.Any(c => c.CustomerId == customerId))
-            {
-                // If the customer ID already exists, append a unique identifier
-                customerId += Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
-            }
-
-            return customerId;
         }
 
-        // create a manager with this methos 
-        //public async Task<IActionResult> OnPostAsync(string returnUrl = null)
-        //{
-        //    returnUrl ??= Url.Content("~/");
-        //    ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-        //    if (ModelState.IsValid)
-        //    {
-        //        var user = CreateUser();
+        // If the input is null, empty, or has less than five uppercase letters, generate a random customer ID
+        if (customerId.Length < 5)
+        {
+            Random random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            customerId = new string(Enumerable.Repeat(chars, 5)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
 
-        //        await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        //        await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        // Check if the generated customer ID already exists in the database
+        while (_context.Customers.Any(c => c.CustomerId == customerId))
+        {
+            // If the customer ID already exists, generate a new random customer ID
+            Random random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            customerId = new string(Enumerable.Repeat(chars, 5)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
 
-        //        // Generate the next available EmployeeId
-
-
-        //        // Create a new employee record
-        //        var employee = new Employee
-        //        {
-        //            LastName = Input.LastName,
-        //            FirstName = Input.FirstName
-        //        };
-
-        //        // Add the new employee to the database
-        //        _context.Employees.Add(employee);
-        //        await _context.SaveChangesAsync();
-
-        //        // Associate the employee with the user
-        //        user.EmployeeId = employee.EmployeeId;
-
-        //        var result = await _userManager.CreateAsync(user, Input.Password);
-
-        //        if (result.Succeeded)
-        //        {
-        //            _logger.LogInformation("User created a new account with password.");
-        //            await _userManager.AddToRoleAsync(user, "Manager");
-
-        //            var userId = await _userManager.GetUserIdAsync(user);
-        //            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        //            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-        //            var callbackUrl = Url.Page(
-        //                "/Account/ConfirmEmail",
-        //                pageHandler: null,
-        //                values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-        //                protocol: Request.Scheme);
-
-        //            await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-        //                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-        //            if (_userManager.Options.SignIn.RequireConfirmedAccount)
-        //            {
-        //                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-        //            }
-        //            else
-        //            {
-        //                await _signInManager.SignInAsync(user, isPersistent: false);
-        //                TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
-        //                return LocalRedirect(returnUrl ?? Url.Content("~/"));
-        //            }
-        //        }
-        //        foreach (var error in result.Errors)
-        //        {
-        //            ModelState.AddModelError(string.Empty, error.Description);
-        //        }
-        //    }
-
-        //    // If we got this far, something failed, redisplay form
-        //    return Page();
-        //}
+        return customerId;
+    }
 
 
 
+    // create a manager with this methos 
+    //public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+    //{
+    //    returnUrl ??= Url.Content("~/");
+    //    ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+    //    if (ModelState.IsValid)
+    //    {
+    //        var user = CreateUser();
+
+    //        await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+    //        await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+    //        // Generate the next available EmployeeId
+
+
+    //        // Create a new employee record
+    //        var employee = new Employee
+    //        {
+    //            LastName = Input.LastName,
+    //            FirstName = Input.FirstName
+    //        };
+
+    //        // Add the new employee to the database
+    //        _context.Employees.Add(employee);
+    //        await _context.SaveChangesAsync();
+
+    //        // Associate the employee with the user
+    //        user.EmployeeId = employee.EmployeeId;
+
+    //        var result = await _userManager.CreateAsync(user, Input.Password);
+
+    //        if (result.Succeeded)
+    //        {
+    //            _logger.LogInformation("User created a new account with password.");
+    //            await _userManager.AddToRoleAsync(user, "Manager");
+
+    //            var userId = await _userManager.GetUserIdAsync(user);
+    //            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+    //            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+    //            var callbackUrl = Url.Page(
+    //                "/Account/ConfirmEmail",
+    //                pageHandler: null,
+    //                values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+    //                protocol: Request.Scheme);
+
+    //            await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
+    //                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+    //            if (_userManager.Options.SignIn.RequireConfirmedAccount)
+    //            {
+    //                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+    //            }
+    //            else
+    //            {
+    //                await _signInManager.SignInAsync(user, isPersistent: false);
+    //                TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
+    //                return LocalRedirect(returnUrl ?? Url.Content("~/"));
+    //            }
+    //        }
+    //        foreach (var error in result.Errors)
+    //        {
+    //            ModelState.AddModelError(string.Empty, error.Description);
+    //        }
+    //    }
+
+    //    // If we got this far, something failed, redisplay form
+    //    return Page();
+    //}
 
 
 
-        private User CreateUser()
+
+
+
+    private User CreateUser()
         {
             try
             {
