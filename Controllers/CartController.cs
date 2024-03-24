@@ -62,11 +62,13 @@ namespace IndividualNorthwindEshop.Controllers
 
             return RedirectToAction("Index");
         }
+
        
         private Cart GetOrCreateCart()
         {
             var customerId = User.FindFirstValue("CustomerId");
             Console.WriteLine($"CustomerId: {customerId}");
+
             if (customerId != null)
             {
                 // User is authenticated, retrieve the cart associated with the customer
@@ -80,9 +82,26 @@ namespace IndividualNorthwindEshop.Controllers
                     return cart;
                 }
             }
+            else
+            {
+                // User is not authenticated, retrieve the cart from the session
+                var cartId = HttpContext.Session.GetInt32("CartId");
 
-            // If no cart is found for an authenticated user or the user is a guest,
-            // create a new cart without associating it with a customer
+                if (cartId.HasValue)
+                {
+                    var cart = _context.Carts
+                        .Include(c => c.CartItems)
+                            .ThenInclude(ci => ci.Product)
+                        .FirstOrDefault(c => c.CartId == cartId.Value);
+
+                    if (cart != null)
+                    {
+                        return cart;
+                    }
+                }
+            }
+
+            // If no cart is found, create a new cart
             var newCart = new Cart
             {
                 CartItems = new List<CartItem>() // Initialize an empty CartItems collection
@@ -90,8 +109,13 @@ namespace IndividualNorthwindEshop.Controllers
             _context.Carts.Add(newCart);
             _context.SaveChanges();
 
+            // Store the cart ID in the session
+            HttpContext.Session.SetInt32("CartId", newCart.CartId);
+
             return newCart;
         }
+
+
 
 
 

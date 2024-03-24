@@ -27,8 +27,8 @@ namespace IndividualNorthwindEshop.Controllers
             var masterContext = _context.Products.Include(p => p.Category).Include(p => p.Supplier);
             return View(await masterContext.ToListAsync());
         }
-        [AllowAnonymous]
-        // GET: Products/Details/5
+        
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -173,5 +173,8 @@ namespace IndividualNorthwindEshop.Controllers
         {
             return _context.Products.Any(e => e.ProductId == id);
         }
+        
+
+
     }
 }

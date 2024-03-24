@@ -28,8 +28,8 @@
         {
             <tr>
                 <td>@item.Product.ProductName</td>
-                <td>@item.Quantity</td>
-                <td>@item.UnitPrice</td>
+                <td>@($"{item.Quantity:C2}")</td>
+                <td>@($"{item.Product.UnitPrice:C2}")</td>
             </tr>
         }
     </tbody>

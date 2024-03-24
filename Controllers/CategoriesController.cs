@@ -30,7 +30,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Categories/Details/5
-        [AllowAnonymous]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -195,6 +195,24 @@ namespace IndividualNorthwindEshop.Controllers
         private bool CategoryExists(int id)
         {
             return _context.Categories.Any(e => e.CategoryId == id);
+        }
+        // Categories-Products controller action
+        [AllowAnonymous]
+        public IActionResult ProductsByCategories(int categoryId)
+        {
+            var products = _context.Products
+                .Where(p => p.CategoryId == categoryId)
+                .Select(p => new ProductViewModel
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    UnitPrice = p.UnitPrice,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category.CategoryName
+                })
+                .ToList();
+
+            return View(products);
         }
     }
 }

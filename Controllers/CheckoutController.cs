@@ -39,11 +39,28 @@ namespace IndividualNorthwindEshop.Controllers
             return View(cartItems);
         }
 
+    
         [HttpPost]
         public IActionResult ProcessOrder(CheckoutModel model)
         {
+            Cart cart = null;
             var customerId = User.FindFirstValue("CustomerId");
-            var cart = _context.Carts.FirstOrDefault(c => c.CustomerId == customerId);
+
+            if (customerId != null)
+            {
+                // User is authenticated, retrieve the cart associated with the customer
+                cart = _context.Carts.FirstOrDefault(c => c.CustomerId == customerId);
+            }
+            else
+            {
+                // User is not authenticated, retrieve the cart from the session
+                var cartId = HttpContext.Session.GetInt32("CartId");
+                if (cartId.HasValue)
+                {
+                    cart = _context.Carts.FirstOrDefault(c => c.CartId == cartId.Value);
+                }
+            }
+
             if (cart == null)
             {
                 // Handle the case when the user doesn't have a cart
@@ -51,12 +68,13 @@ namespace IndividualNorthwindEshop.Controllers
             }
 
             var cartItems = _context.CartItems.Include(item => item.Product)
-        .Where(item => item.CartId == cart.CartId)
-        .ToList();
+                .Where(item => item.CartId == cart.CartId)
+                .ToList();
+
             // Create a new order
             var order = new Order
             {
-                CustomerId = cart.CustomerId,
+                CustomerId = customerId, // Set the CustomerId to null for unauthenticated users
                 OrderDate = DateTime.Now,
                 GuestEmail = model.GuestEmail,
                 ShipName = model.CustomerName,
@@ -89,9 +107,17 @@ namespace IndividualNorthwindEshop.Controllers
             _context.CartItems.RemoveRange(cartItems);
             _context.SaveChanges();
 
+            // Clear the cart ID from the session for unauthenticated users
+            if (customerId == null)
+            {
+                HttpContext.Session.Remove("CartId");
+            }
+
             // Redirect to the order confirmation page
             return RedirectToAction("Confirmation", new { orderId = order.OrderId });
         }
+
+
 
         public IActionResult Confirmation(int orderId)
         {

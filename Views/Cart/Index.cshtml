@@ -1,4 +1,4 @@
-﻿@model List<IndividualNorthwindEshop.Models.CartItem>
+﻿ @model List<IndividualNorthwindEshop.Models.CartItem>
 
 @{
     ViewData["Title"] = "Shopping Cart";
@@ -9,7 +9,7 @@
 
 @if (Model.Count > 0)
 {
-    <table>
+    <table class="table">
         <thead>
             <tr>
                 <th>Product</th>
@@ -24,19 +24,23 @@
             {
                 <tr>
                     <td>@item.Product.ProductName</td>
-                    <td>@($"{item.Product.UnitPrice:C}")</td>
+                    <td>@($"{item.Product.UnitPrice:C2}")</td>
                     <td>
-                        <form asp-controller="Cart" asp-action="UpdateCartQuantity" method="post">
+                        <form asp-controller="Cart" asp-action="UpdateCartQuantity" method="post" class="form-inline">
                             <input type="hidden" name="productId" value="@item.ProductId" />
-                            <input type="number" name="quantity" value="@item.Quantity" min="1" />
-                            <button type="submit">Update</button>
+                            <div class="input-group">
+                                <input type="number" name="quantity" value="@item.Quantity" min="1" class="form-control" />
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-primary">Update</button>
+                                </div>
+                            </div>
                         </form>
                     </td>
-                    <td>@($"{item.Product.UnitPrice * item.Quantity:C}")</td>
+                    <td>@($"{item.Product.UnitPrice * item.Quantity:C2}")</td>
                     <td>
                         <form asp-controller="Cart" asp-action="RemoveFromCart" method="post">
                             <input type="hidden" name="productId" value="@item.ProductId" />
-                            <button type="submit">Remove</button>
+                            <button type="submit" class="btn btn-danger">Remove</button>
                         </form>
                     </td>
                 </tr>
@@ -45,14 +49,12 @@
     </table>
 
     <div class="cart-total">
-        Total: @($"{Model.Sum(item => item.Product.UnitPrice * item.Quantity):C}")
+        Total: @($"{Model.Sum(item => item.Product.UnitPrice * item.Quantity):C2}")
     </div>
 
-
-
-    <a asp-controller="Checkout" asp-action="Index">Proceed to Checkout</a>
-
-
+    <div class="text-right">
+        <a asp-controller="Checkout" asp-action="Index" class="btn btn-success">Proceed to Checkout</a>
+    </div>
 }
 else
 {

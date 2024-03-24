@@ -27,9 +27,9 @@
                     <td>@order.OrderId</td>
                     <td>@order.OrderDate</td>
                     <td>@order.ProductName</td>
-                    <td>@order.Quantity</td>
-                    <td>@order.UnitPrice</td>
-                    <td>@order.TotalPrice</td>
+                    <td>@($"{order.Quantity:C2}")</td>
+                    <td>@($"{order.UnitPrice:C2}")</td>
+                    <td>@($"{order.TotalPrice:C2}")</td>
                     <td>@order.ShipAddress</td>
                     <td>@order.ShipCity</td>
                     <td>@order.ShipPostalCode</td>

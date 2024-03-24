@@ -19,20 +19,17 @@ namespace IndividualNorthwindEshop
                 builder.Services.AddRazorPages();
                 builder.Services.AddDbContext<MasterContext>(options =>
                                options.UseSqlServer(builder.Configuration.GetConnectionString("Northwind")));
-
-
-
-
-
-                //builder.Services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<MasterContext>();
-                //       builder.Services.AddIdentityCore<User>()
-                //.AddRoles<IdentityRole>()
-                //.AddEntityFrameworkStores<MasterContext>();
                 builder.Services.AddIdentity<User, IdentityRole>()
          .AddEntityFrameworkStores<MasterContext>().AddDefaultTokenProviders();
 
                 builder.Services.AddSingleton<IEmailSender, EmailSender>();
                 builder.Services.AddScoped<IOle78DecryptionService, Ole78DecryptionService>();
+                builder.Services.AddSession(options =>
+                {
+                    options.IdleTimeout = TimeSpan.FromMinutes(30);
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.IsEssential = true;
+                });
                 var app = builder.Build();
                 using (var scope = app.Services.CreateScope())
                 {
@@ -67,6 +64,7 @@ namespace IndividualNorthwindEshop
                 app.UseStaticFiles();
 
                 app.UseRouting();
+                app.UseSession();
 
                 app.UseAuthorization();
 
