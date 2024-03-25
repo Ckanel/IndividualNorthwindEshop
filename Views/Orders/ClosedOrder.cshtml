@@ -1,0 +1,50 @@
+﻿@model Order
+
+<h2>Order Confirmation</h2>
+
+<div class="alert alert-success" role="alert">
+    <h4 class="alert-heading">Thank you for your order!</h4>
+    <p>Your order has been successfully placed. Below are the details of your order:</p>
+    <hr>
+    <p class="mb-0">
+        <strong>Order ID:</strong> @Model.OrderId<br />
+        <strong>Order Date:</strong> @Model.OrderDate.ToString("yyyy-MM-dd HH:mm")<br />
+        <strong>Shipping Address:</strong> @Model.ShipAddress, @Model.ShipCity, @Model.ShipPostalCode
+    </p>
+</div>
+
+<h4>Order Summary</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.OrderDetails)
+        {
+            <tr>
+                <td>@item.Product.ProductName</td>
+                <td>@item.Quantity</td>
+                <td>@item.UnitPrice.ToString("C")</td>
+                <td>@((item.Quantity * item.UnitPrice).ToString("C"))</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="3" class="text-right"><strong>Order Total:</strong></td>
+            <td>@Model.OrderDetails.Sum(item => item.Quantity * item.UnitPrice).ToString("C")</td>
+        </tr>
+    </tfoot>
+</table>
+
+<p>Please keep this order confirmation for your records. If you have any questions or concerns, please contact our customer support.</p>
+
+<div>
+    <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Back to Home</a>
+</div>
+

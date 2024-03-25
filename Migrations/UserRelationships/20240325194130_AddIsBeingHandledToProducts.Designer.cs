@@ -4,16 +4,19 @@ using IndividualNorthwindEshop.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace IndividualNorthwindEshop.Migrations
+namespace IndividualNorthwindEshop.Migrations.UserRelationships
 {
     [DbContext(typeof(MasterContext))]
-    partial class MasterContextModelSnapshot : ModelSnapshot
+    [Migration("20240325194130_AddIsBeingHandledToProducts")]
+    partial class AddIsBeingHandledToProducts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -527,10 +530,6 @@ namespace IndividualNorthwindEshop.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
 
-                    b.Property<string>("CancellationReason")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("CustomerId")
                         .HasMaxLength(5)
                         .HasColumnType("nchar(5)")
@@ -550,16 +549,13 @@ namespace IndividualNorthwindEshop.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<DateTime?>("HandlingStartTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("IsBeingHandled")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsHandled")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime>("OrderDate")
+                    b.Property<DateTime?>("OrderDate")
                         .HasColumnType("datetime");
 
                     b.Property<DateTime?>("RequiredDate")

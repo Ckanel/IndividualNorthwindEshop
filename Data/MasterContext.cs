@@ -495,6 +495,10 @@ public partial class MasterContext : IdentityDbContext<User>
                 .HasForeignKey(d => d.SupplierId)
                 .HasConstraintName("FK_Products_Suppliers");
         });
+        modelBuilder.Entity<Product>()
+    .Property(p => p.Timestamp)
+    .IsRowVersion();
+
 
         modelBuilder.Entity<ProductSalesFor1997>(entity =>
         {

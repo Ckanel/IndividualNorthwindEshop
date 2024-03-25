@@ -52,19 +52,24 @@
 
 <h2>Pending Orders</h2>
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
 @if (Model.Any())
 {
     <table>
         <thead>
             <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Email</th>
-                <th>Shipping Address</th>
-                <th>Shipping City</th>
-                <th>Postal Code</th>
-                <th>Order Date</th>
-                <th>Actions</th>
+                <th width="10%">Order ID</th>
+                <th width="15%">Customer</th>
+                <th width="15%">Email</th>
+                <th width="20%">Shipping Address</th>
+                <th width="10%">Shipping City</th>
+                <th width="10%">Postal Code</th>
+                <th width="15%">Order Date</th>
+                <th width="5%">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -92,9 +97,9 @@
                     <td>@order.ShipAddress</td>
                     <td>@order.ShipCity</td>
                     <td>@order.ShipPostalCode</td>
-                    <td>@order.OrderDate</td>
+                    <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
                     <td>
-                        <a href="@Url.Action("HandleOrder", new { id = order.OrderId })" class="btn btn-primary">Handle Order</a>
+                        <a href="#" onclick="confirmHandleOrder(@order.OrderId); return false;" class="btn btn-primary">Handle Order</a>
                     </td>
                 </tr>
             }
@@ -105,4 +110,12 @@ else
 {
     <p>No pending orders found.</p>
 }
+
+<script>
+    function confirmHandleOrder(orderId) {
+        if (confirm("Are you sure you want to handle this order?")) {
+            window.location.href = "/Orders/HandleOrder/" + orderId;
+        }
+    }
+</script>
 
