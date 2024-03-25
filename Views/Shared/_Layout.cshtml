@@ -51,8 +51,11 @@
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Shippers" asp-action="Index">Shippers</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Invoice" asp-action="SearchCustomer">Search Customers</a>
+                                    <a class="nav-link text-dark" asp-controller="Orders" asp-action="PendingOrders">Pending Orders</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Invoice" asp-action="SearchCustomer">Search Customers</a>
+                                </li>                               
                             }
                             @if (User.IsInRole("Manager"))
                             {

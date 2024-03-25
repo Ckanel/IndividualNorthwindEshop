@@ -82,7 +82,8 @@ namespace IndividualNorthwindEshop.Controllers
                 ShipCity = model.City,
                 ShipCountry = model.Country,
                 ShipPostalCode = model.PostalCode,
-                // Set other order properties based on the model
+                IsHandled = false,
+                Status = "Pending"
             };
 
             // Add the order to the database
