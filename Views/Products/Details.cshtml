@@ -1,4 +1,4 @@
-﻿@model IndividualNorthwindEshop.Models.Product
+﻿@* @model IndividualNorthwindEshop.Models.Product
 
 @{
     ViewData["Title"] = "Details";
@@ -67,7 +67,97 @@
         </dd>
     </dl>
 </div>
+<form asp-controller="Cart" asp-action="AddToCart" method="post">
+    <input type="hidden" name="productId" value="@Model.ProductId" />
+    <button type="submit" class="btn btn-primary">Add to Cart</button>
+</form>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.ProductId">Edit</a> |
+    @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+    {
+        <a asp-action="Edit" asp-route-id="@Model?.ProductId">Edit</a>
+    }
+    |
     <a asp-action="Index">Back to List</a>
 </div>
+ *@
+ @model IndividualNorthwindEshop.Models.Product
+
+@{
+    ViewData["Title"] = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Product</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.ProductName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.ProductName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.QuantityPerUnit)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.QuantityPerUnit)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.UnitPrice)
+        </dt>
+        <dd class="col-sm-10">
+            @($"{Model.UnitPrice:C2}")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.UnitsInStock)
+        </dt>
+        <dd class="col-sm-10">
+            @($"{Model.UnitsInStock:#}")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.UnitsOnOrder)
+        </dt>
+        <dd class="col-sm-10">
+            @($"{Model.UnitsOnOrder:#}")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.ReorderLevel)
+        </dt>
+        <dd class="col-sm-10">
+            @($"{Model.ReorderLevel:#}")
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Discontinued)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Discontinued)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Category)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Category.CategoryId)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Supplier)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Supplier.SupplierId)
+        </dd>
+    </dl>
+    @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+    {
+        <form asp-action="Edit" asp-route-id="@Model?.ProductId" method="get" class="d-inline">
+            <button type="submit" class="btn btn-primary">Edit</button>
+        </form>
+        <form asp-action="Index" method="get" class="d-inline">
+            <button type="submit" class="btn btn-secondary">Back to List</button>
+        </form>
+    }
+    
+    
+</div>
+

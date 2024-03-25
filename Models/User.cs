@@ -1,20 +1,15 @@
-﻿using System.Data;
+﻿using Microsoft.AspNetCore.Identity;
+using System.Data;
 
 namespace IndividualNorthwindEshop.Models
 {
-    public class User
+    public class User : IdentityUser
     {
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
-        public Role Role { get; set; }
+
+        public string? CustomerId { get; set; }
         public virtual Customer Customer { get; set; }
+
+        public int? EmployeeId { get; set; }
         public virtual Employee Employee { get; set; }
-    }
-    public enum Role
-    {
-        Customer,
-        Admin,
-        Manager
     }
 }

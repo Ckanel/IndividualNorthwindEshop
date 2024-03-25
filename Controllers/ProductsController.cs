@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Data;
 using IndividualNorthwindEshop.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers
 {
+    
     public class ProductsController : Controller
     {
         private readonly MasterContext _context;
@@ -18,15 +20,15 @@ namespace IndividualNorthwindEshop.Controllers
         {
             _context = context;
         }
-
+        [AllowAnonymous]
         // GET: Products
         public async Task<IActionResult> Index()
         {
             var masterContext = _context.Products.Include(p => p.Category).Include(p => p.Supplier);
             return View(await masterContext.ToListAsync());
         }
-
-        // GET: Products/Details/5
+        
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -45,7 +47,7 @@ namespace IndividualNorthwindEshop.Controllers
 
             return View(product);
         }
-
+        [Authorize(Roles = "Employee,Manager")]
         // GET: Products/Create
         public IActionResult Create()
         {
@@ -59,6 +61,7 @@ namespace IndividualNorthwindEshop.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Create([Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued")] Product product)
         {
             if (ModelState.IsValid)
@@ -73,6 +76,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Products/Edit/5
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -95,6 +99,7 @@ namespace IndividualNorthwindEshop.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Edit(int id, [Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued")] Product product)
         {
             if (id != product.ProductId)
@@ -128,6 +133,7 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
         // GET: Products/Delete/5
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -150,6 +156,7 @@ namespace IndividualNorthwindEshop.Controllers
         // POST: Products/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -166,5 +173,8 @@ namespace IndividualNorthwindEshop.Controllers
         {
             return _context.Products.Any(e => e.ProductId == id);
         }
+        
+
+
     }
 }

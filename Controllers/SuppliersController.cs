@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using IndividualNorthwindEshop.Data;
 using IndividualNorthwindEshop.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers
 {
+    [Authorize(Roles = "Manager,Employee")]
     public class SuppliersController : Controller
     {
         private readonly MasterContext _context;

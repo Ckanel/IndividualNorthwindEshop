@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using IndividualNorthwindEshop.Models;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 namespace IndividualNorthwindEshop.Data;
 
-public partial class MasterContext : DbContext
+public partial class MasterContext : IdentityDbContext<User>
 {
     public MasterContext()
     {
@@ -69,13 +69,16 @@ public partial class MasterContext : DbContext
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
     public virtual DbSet<Territory> Territories { get; set; }
+    
     public DbSet<User> Users { get; set; }
-
+    public DbSet<Cart> Carts { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
 
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<AlphabeticalListOfProduct>(entity =>
         {
             entity
@@ -90,6 +93,19 @@ public partial class MasterContext : DbContext
             entity.Property(e => e.SupplierId).HasColumnName("SupplierID");
             entity.Property(e => e.UnitPrice).HasColumnType("money");
         });
+        modelBuilder.Entity<User>()
+     .HasOne(u => u.Customer)
+     .WithOne(c => c.User)
+     .HasForeignKey<User>(u => u.CustomerId)
+     .OnDelete(DeleteBehavior.Cascade)
+     .HasConstraintName("FK_Users_Customers");
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Employee)
+            .WithOne(e => e.User)
+            .HasForeignKey<User>(u => u.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("FK_Users_Employees");
 
         modelBuilder.Entity<Category>(entity =>
         {
@@ -147,7 +163,7 @@ public partial class MasterContext : DbContext
             entity.Property(e => e.Phone).HasMaxLength(24);
             entity.Property(e => e.PostalCode).HasMaxLength(10);
             entity.Property(e => e.Region).HasMaxLength(15);
-
+           
             entity.HasMany(d => d.CustomerTypes).WithMany(p => p.Customers)
                 .UsingEntity<Dictionary<string, object>>(
                     "CustomerCustomerDemo",
@@ -171,7 +187,9 @@ public partial class MasterContext : DbContext
                             .HasMaxLength(10)
                             .IsFixedLength()
                             .HasColumnName("CustomerTypeID");
+
                     });
+
         });
 
         modelBuilder.Entity<CustomerAndSuppliersByCity>(entity =>
@@ -226,7 +244,7 @@ public partial class MasterContext : DbContext
             entity.HasOne(d => d.ReportsToNavigation).WithMany(p => p.InverseReportsToNavigation)
                 .HasForeignKey(d => d.ReportsTo)
                 .HasConstraintName("FK_Employees_Employees");
-
+          
             entity.HasMany(d => d.Territories).WithMany(p => p.Employees)
                 .UsingEntity<Dictionary<string, object>>(
                     "EmployeeTerritory",
@@ -248,7 +266,34 @@ public partial class MasterContext : DbContext
                             .HasColumnName("TerritoryID");
                     });
         });
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.HasKey(e => e.CartId);
 
+            entity.Property(e => e.CustomerId)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .IsRequired(false);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany()
+                .HasForeignKey(e => e.CustomerId);
+        });
+
+
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.HasKey(e => e.CartItemId);
+
+            entity.HasOne(e => e.Cart)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(e => e.CartId);
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId);
+        });
         modelBuilder.Entity<Invoice>(entity =>
         {
             entity
@@ -320,7 +365,8 @@ public partial class MasterContext : DbContext
             entity.Property(e => e.ShipPostalCode).HasMaxLength(10);
             entity.Property(e => e.ShipRegion).HasMaxLength(15);
             entity.Property(e => e.ShippedDate).HasColumnType("datetime");
-
+            entity.Property(e => e.GuestEmail)
+           .HasMaxLength(100);
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
                 .HasConstraintName("FK_Orders_Customers");
@@ -449,6 +495,10 @@ public partial class MasterContext : DbContext
                 .HasForeignKey(d => d.SupplierId)
                 .HasConstraintName("FK_Products_Suppliers");
         });
+        modelBuilder.Entity<Product>()
+    .Property(p => p.Timestamp)
+    .IsRowVersion();
+
 
         modelBuilder.Entity<ProductSalesFor1997>(entity =>
         {

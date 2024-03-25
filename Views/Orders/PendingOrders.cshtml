@@ -1,0 +1,121 @@
+﻿@model List<Order>
+
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 6px 12px;
+        margin-bottom: 0;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.42857143;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        cursor: pointer;
+        user-select: none;
+        background-image: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-color: #337ab7;
+        border-color: #2e6da4;
+    }
+
+        .btn-primary:hover {
+            color: #fff;
+            background-color: #286090;
+            border-color: #204d74;
+        }
+</style>
+
+<h2>Pending Orders</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+@if (Model.Any())
+{
+    <table>
+        <thead>
+            <tr>
+                <th width="10%">Order ID</th>
+                <th width="15%">Customer</th>
+                <th width="15%">Email</th>
+                <th width="20%">Shipping Address</th>
+                <th width="10%">Shipping City</th>
+                <th width="10%">Postal Code</th>
+                <th width="15%">Order Date</th>
+                <th width="5%">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    @if (order.Customer == null)
+                    {
+                        <td>Guest Customer</td>
+                        <td>@order.GuestEmail</td>
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(order.Customer.CompanyName))
+                        {
+                            <td>@order.Customer.ContactName</td>
+                        }
+                        else
+                        {
+                            <td>@order.Customer.CompanyName</td>
+                        }
+                        <td>@order.GuestEmail</td>
+                    }
+                    <td>@order.ShipAddress</td>
+                    <td>@order.ShipCity</td>
+                    <td>@order.ShipPostalCode</td>
+                    <td>@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <a href="#" onclick="confirmHandleOrder(@order.OrderId); return false;" class="btn btn-primary">Handle Order</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No pending orders found.</p>
+}
+
+<script>
+    function confirmHandleOrder(orderId) {
+        if (confirm("Are you sure you want to handle this order?")) {
+            window.location.href = "/Orders/HandleOrder/" + orderId;
+        }
+    }
+</script>
+

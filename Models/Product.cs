@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace IndividualNorthwindEshop.Models;
 
@@ -24,6 +25,9 @@ public partial class Product
     public short? ReorderLevel { get; set; }
 
     public bool Discontinued { get; set; }
+    public int ReservedStock { get; set; }
+    [Timestamp]
+    public byte[] Timestamp { get; set; }
 
     public virtual Category? Category { get; set; }
 

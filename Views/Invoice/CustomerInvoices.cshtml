@@ -1,0 +1,67 @@
+﻿@model List<CustomerOrderViewModel>
+
+@{
+    ViewData["Title"] = "Customer Invoices";
+}
+
+<h1>Customer Invoices</h1>
+
+@if (Model.Any())
+{
+    foreach (var order in Model)
+    {
+        <h3>Order #@order.OrderId</h3>
+        <p>Order Date: @(order.OrderDate.HasValue ? order.OrderDate.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+
+        @if (!string.IsNullOrEmpty(order.CompanyName))
+        {
+            <p>Customer: @order.CompanyName</p>
+        }
+        else
+        {
+            <p>Customer: N/A</p>
+        }
+
+        @if (!string.IsNullOrEmpty(order.CustomerEmail))
+        {
+            <p>Email: @order.CustomerEmail</p>
+        }
+        else
+        {
+            <p>Email: N/A</p>
+        }
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Extended Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var detail in order.OrderDetails)
+                {
+                    <tr>
+                        <td>@detail.ProductId</td>
+                        <td>@detail.ProductName</td>
+                        <td>@detail.Quantity</td>
+                        <td>@detail.UnitPrice.ToString("F2")</td>
+                        <td>@detail.ExtendedPrice.ToString("F2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <p>Total Order Amount: @order.OrderDetails.Sum(od => od.ExtendedPrice).ToString("F2")</p>
+
+        <hr />
+    }
+}
+else
+{
+    <p>No orders found for the selected customer.</p>
+}
+
