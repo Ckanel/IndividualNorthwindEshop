@@ -1,4 +1,4 @@
-﻿ @model List<ProductViewModel>
+﻿@*  @model List<ProductViewModel>
 
 <h2>Products by Category</h2>
 
@@ -26,6 +26,65 @@
                             {
                                 <form method="post" action="@Url.Action("AddToCart", "Cart")">
 
+                                    <input type="hidden" name="productId" value="@product.ProductId" />
+                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>No products found for the selected category.</p>
+}
+
+ *@
+ @model List<ProductViewModel>
+
+<h2>Products by Category</h2>
+
+@if (Model.Any())
+{
+    <div class="row">
+        @foreach (var product in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="@Url.Action("GetProductPhoto", "Products", new { id = product.ProductId })" alt="@product.ProductName" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">@product.ProductName</h5>
+                        <p class="card-text">Price: @string.Format("{0:C2}", product.UnitPrice)</p>
+                        <p class="card-text">Category: @product.CategoryName</p>
+                        @if (product.UnitsInStock < 3)
+                        {
+                            <p class="card-text text-danger">Units in stock: @product.UnitsInStock</p>
+                        }
+                        else if (product.UnitsInStock == 0)
+                        {
+                            <p class="card-text text-danger">Out of stock</p>
+                        }
+                        else
+                        {
+                            <p class="card-text">Units in stock: @product.UnitsInStock</p>
+                        }
+                        @if (product.Discontinued)
+                        {
+                            <p class="card-text text-danger">Discontinued</p>
+                        }
+                        <div class="d-flex justify-content-between">
+                            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+                            {
+                                <a href="@Url.Action("Edit", "Products", new { id = product.ProductId })" class="btn btn-primary">Edit</a>
+                                <a href="@Url.Action("Details", "Products", new { id = product.ProductId })" class="btn btn-info">Details</a>
+                                <a href="@Url.Action("Delete", "Products", new { id = product.ProductId })" class="btn btn-danger">Delete</a>
+                            }
+                            else
+                            {
+                                <form method="post" action="@Url.Action("AddToCart", "Cart")">
                                     <input type="hidden" name="productId" value="@product.ProductId" />
                                     <button type="submit" class="btn btn-primary">Add to Cart</button>
                                 </form>

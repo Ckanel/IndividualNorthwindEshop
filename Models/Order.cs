@@ -36,6 +36,7 @@ public partial class Order
     [MaxLength(100)]
     [EmailAddress]
     public string? GuestEmail { get; set; }
+
     public virtual Customer? Customer { get; set; }
 
     public virtual Employee? Employee { get; set; }
