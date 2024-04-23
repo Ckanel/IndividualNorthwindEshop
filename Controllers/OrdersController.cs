@@ -232,7 +232,10 @@ namespace IndividualNorthwindEshop.Controllers
           .Include(o => o.Customer) 
           .ToList();
             return View(pendingOrders);
-                    }
+        }
+
+
+
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> HandleOrder(int id)
         {

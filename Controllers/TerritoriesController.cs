@@ -84,7 +84,7 @@ namespace IndividualNorthwindEshop.Controllers
             {
                 return NotFound();
             }
-            ViewData["RegionId"] = new SelectList(_context.Regions, "RegionId", "RegionId", territory.RegionId);
+            ViewData["RegionId"] = new SelectList(_context.Regions, "RegionId", "RegionDescription", territory.RegionId);
             return View(territory);
         }
 
@@ -120,7 +120,7 @@ namespace IndividualNorthwindEshop.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["RegionId"] = new SelectList(_context.Regions, "RegionId", "RegionId", territory.RegionId);
+            ViewData["RegionId"] = new SelectList(_context.Regions, "RegionId", "RegionDescription", territory.RegionId);
             return View(territory);
         }
 

@@ -1,44 +1,55 @@
 ﻿@model IEnumerable<IndividualNorthwindEshop.Models.Territory>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Territories";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
-                    {
-<h1>Index</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.TerritoryDescription)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Region)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.TerritoryDescription)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Region.RegionId)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.TerritoryId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.TerritoryId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.TerritoryId">Delete</a>
-            </td>
-        </tr>
+@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+{
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col">
+                <h2 class="mb-3">Territories</h2>
+            </div>
+            <div class="col text-right">
+                <a asp-action="Create" class="btn btn-primary">Create New</a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col">
+                            @Html.DisplayNameFor(model => model.TerritoryDescription)
+                        </th>
+                        <th scope="col">
+                            @Html.DisplayNameFor(model => model.Region.RegionDescription) 
+                        </th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.TerritoryDescription)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Region.RegionDescription) 
+                            </td>
+                            <td>
+                                <a asp-action="Edit" asp-route-id="@item.TerritoryId" class="btn btn-sm btn-secondary">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.TerritoryId" class="btn btn-sm btn-info">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.TerritoryId" class="btn btn-sm btn-danger">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }
-    </tbody>
-</table>
-}
+
