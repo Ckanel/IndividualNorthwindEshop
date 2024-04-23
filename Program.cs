@@ -36,6 +36,11 @@ namespace IndividualNorthwindEshop
                     logging.AddConsole();
                     logging.AddDebug();
                 });
+                builder.Services.AddScoped<CartService>();
+                builder.Services.AddScoped<OrderService>();
+                builder.Services.AddScoped<IPaginationService, PaginationService>();
+
+
                 var app = builder.Build();
                 using (var scope = app.Services.CreateScope())
                 {

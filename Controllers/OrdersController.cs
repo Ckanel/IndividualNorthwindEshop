@@ -9,6 +9,8 @@ using IndividualNorthwindEshop.Models;
 using IndividualNorthwindEshop.Data;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using static IndividualNorthwindEshop.Models.Order;
+using IndividualNorthwindEshop.Services;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -16,20 +18,29 @@ namespace IndividualNorthwindEshop.Controllers
     {
         private readonly MasterContext _context;
         private readonly ILogger<OrdersController> _logger;
+        private readonly IPaginationService _paginationService;
 
-        public OrdersController(MasterContext context, ILogger<OrdersController> logger)
+        public OrdersController(MasterContext context, ILogger<OrdersController> logger, IPaginationService paginationService)
         {
+            _paginationService = paginationService;
             _context = context;
             _logger = logger;
         }
 
-        // GET: Orders
-        [Authorize(Roles="Manager,Employee")]
-        public async Task<IActionResult> Index()
+        
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 25)
         {
-            var masterContext = _context.Orders.Include(o => o.Customer).Include(o => o.Employee).Include(o => o.ShipViaNavigation);
-            return View(await masterContext.ToListAsync());
+            var query = _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.Employee)
+                .Include(o => o.ShipViaNavigation)
+                .AsNoTracking();
+
+            var paginatedList = await _paginationService.CreatePaginatedListAsync(query, pageNumber, pageSize);
+
+            return View(paginatedList);
         }
+
 
         // GET: Orders/Details/5
         [Authorize(Roles = "Manager,Employee")]
@@ -215,14 +226,23 @@ namespace IndividualNorthwindEshop.Controllers
         [Authorize(Roles = "Manager,Employee")]
         public IActionResult PendingOrders()
         {
+            
             var pendingOrders = _context.Orders
-                .Where(o => !o.IsHandled && o.Status == "Pending")
-                .ToList();
+          .Where(o => (int)o.Status == (int)OrderStatus.Pending)
+          .Include(o => o.Customer) 
+          .ToList();
             return View(pendingOrders);
-        }
+                    }
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> HandleOrder(int id)
         {
+            bool comingFromUpdateOrCancel = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"] ||
+                                            TempData.ContainsKey("OperationCancelled") && (bool)TempData["OperationCancelled"];
+
+            // Clear the TempData right away after using it
+            TempData.Remove("UpdateSuccess");
+            TempData.Remove("OperationCancelled");
+
             var order = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
@@ -235,50 +255,58 @@ namespace IndividualNorthwindEshop.Controllers
                 return NotFound();
             }
 
-            if (order.IsBeingHandled)
+            var currentUser = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
+            _logger.LogInformation("EmployeeId: {EmployeeId}", currentUser?.Value);
+
+            if (currentUser == null)
+            {
+                TempData["ErrorMessage"] = "Unable to retrieve the current employee's ID.";
+                return RedirectToAction("PendingOrders");
+            }
+
+            var currentEmployeeId = _context.Users
+                .Where(u => u.Id == currentUser.Value)
+                .Select(u => u.EmployeeId)
+                .FirstOrDefault();
+
+            if (order.Status == OrderStatus.BeingHandled && order.EmployeeId != currentEmployeeId)
             {
                 TempData["ErrorMessage"] = "This order is already being handled by another employee.";
                 return RedirectToAction("PendingOrders");
             }
 
-            order.IsBeingHandled = true;
-            order.Status = "Being Reviewed";
-            order.HandlingStartTime = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
-            var currentProducts = await _context.Products
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToListAsync();
-
-            foreach (var orderDetail in order.OrderDetails)
+            if (order.Status != OrderStatus.BeingHandled && !comingFromUpdateOrCancel)
             {
-                var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
-                if (product != null)
-                {
-                    _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
-                }
-            }
+                order.EmployeeId = currentEmployeeId;
+                order.Status = OrderStatus.BeingHandled;
+                order.HandlingStartTime = DateTime.Now;
 
-            try
-            {
+                var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
+                var currentProducts = await _context.Products.Where(p => productIds.Contains(p.ProductId)).ToListAsync();
+
                 foreach (var orderDetail in order.OrderDetails)
                 {
                     var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
                     if (product != null)
                     {
-                        product.ReservedStock += orderDetail.Quantity;
+                        // Set ReservedStock to the quantity
+                        // since this is the first time we are handling the order.
+                        product.ReservedStock = orderDetail.Quantity;
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogError(ex, "Concurrency conflict occurred on handling order with ID: {OrderId}", id);
+                    TempData["ErrorMessage"] = "A concurrency error occurred. Please try again.";
+                    return RedirectToAction("PendingOrders");
+                }
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "A concurrency conflict occurred while updating the reserved stock for order with ID: {OrderId}", id);
-                TempData["ErrorMessage"] = "A concurrency conflict occurred while updating the order. Please try again.";
-                return RedirectToAction("PendingOrders");
-            }
+            
 
             var viewModel = new HandleOrderViewModel
             {
@@ -298,6 +326,7 @@ namespace IndividualNorthwindEshop.Controllers
             return View(viewModel);
         }
 
+        
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> CloseOrder(int id)
@@ -318,16 +347,11 @@ namespace IndividualNorthwindEshop.Controllers
                     {
                         return NotFound();
                     }
-                    if (!order.IsBeingHandled)
-                    {
-                        order.IsBeingHandled = true;
-                        order.Status = "Being Reviewed";
-                        order.HandlingStartTime = DateTime.Now;
-                        await _context.SaveChangesAsync();
-                    }
 
+                    _context.Entry(order).State = EntityState.Detached;
+                    _context.Orders.Attach(order);
 
-                    var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
+                    var productIds = order.OrderDetails.Select(od => od.ProductId).ToHashSet();
                     var currentProducts = await _context.Products
                         .Where(p => productIds.Contains(p.ProductId))
                         .ToListAsync();
@@ -362,19 +386,14 @@ namespace IndividualNorthwindEshop.Controllers
                             }
                         }
 
-                        order.Status = "Completed";
-                        order.IsHandled = true;
-                        order.IsBeingHandled = false;
-                        order.HandlingStartTime = null;
 
+                        order.Status = OrderStatus.Completed;
+                        order.HandlingStartTime = null;
                         _context.Entry(order).State = EntityState.Modified;
                         await _context.SaveChangesAsync();
-
                         await transaction.CommitAsync();
 
-                        // Send notification and log order completion
-                        _ = SendOrderCompletionNotification(order);
-                        _logger.LogInformation("Order with ID: {OrderId} has been completed.", order.OrderId);
+                        LogAndNotifyOrderCompletion(order);
 
                         return RedirectToAction("ClosedOrder", new { id = order.OrderId });
                     }
@@ -390,33 +409,39 @@ namespace IndividualNorthwindEshop.Controllers
                 {
                     _logger.LogError(ex, "A concurrency conflict occurred while updating the order with ID: {OrderId}", id);
 
-                    // Refresh the order entity from the database
-                    _context.Entry(order).Reload();
-
-                    // Check if the order has already been completed by another employee
-                    if (order.IsHandled && order.Status == "Completed")
+                    if (order != null)
                     {
-                        await transaction.RollbackAsync();
-                        TempData["ErrorMessage"] = "This order has already been completed by another employee.";
-                        return RedirectToAction("PendingOrders");
-                    }
+                        _context.Entry(order).Reload();
+
+                        if (order.Status != OrderStatus.BeingHandled)
+                        {
+                            TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
+                            return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                        }
+                                            }
 
                     // Retry the update operation
-                    order.Status = "Completed";
-                    order.IsHandled = true;
-                    order.IsBeingHandled = false;
+
+                    order.Status = OrderStatus.Completed;
+                   
                     order.HandlingStartTime = null;
 
                     _context.Entry(order).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
+                    try
+                    {
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
 
-                    await transaction.CommitAsync();
+                        LogAndNotifyOrderCompletion(order);
 
-                    // Send notification and log order completion
-                    _ = SendOrderCompletionNotification(order);
-                    _logger.LogInformation("Order with ID: {OrderId} has been completed.", order.OrderId);
-
-                    return RedirectToAction("ClosedOrder", new { id = order.OrderId });
+                        return RedirectToAction("ClosedOrder", new { id = order.OrderId });
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        await transaction.RollbackAsync();
+                        TempData["ErrorMessage"] = "Unable to complete the order due to a concurrency conflict. Please try again.";
+                        return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -427,6 +452,14 @@ namespace IndividualNorthwindEshop.Controllers
                 }
             }
         }
+
+        private void LogAndNotifyOrderCompletion(Order order)
+        {
+            _ = SendOrderCompletionNotification(order);
+            _logger.LogInformation("Order with ID: {OrderId} has been completed.", order.OrderId);
+        }
+
+
 
         [HttpGet]
         [Authorize(Roles = "Manager,Employee")]
@@ -443,13 +476,6 @@ namespace IndividualNorthwindEshop.Controllers
             return View(order);
         }
 
-        
-
-
-
-
-
-
 
 
 
@@ -458,7 +484,7 @@ namespace IndividualNorthwindEshop.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
-        public async Task<IActionResult> UpdateOrderQuantities(int id, List<OrderDetail> orderDetails)
+        public async Task<IActionResult> UpdateOrderQuantities(int id, List<UpdatedOrderDetailViewModel> updatedOrderDetails)
         {
             var order = await _context.Orders
                 .Include(o => o.OrderDetails)
@@ -470,25 +496,39 @@ namespace IndividualNorthwindEshop.Controllers
                 return NotFound();
             }
 
-            if (!order.IsBeingHandled)
+            if (order.Status != OrderStatus.BeingHandled)
             {
-                order.IsBeingHandled = true;
-                order.Status = "Being Reviewed";
-                order.HandlingStartTime = DateTime.Now;
-                await _context.SaveChangesAsync();
+                TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
+                return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
 
-            var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
-            var currentProducts = await _context.Products
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToListAsync();
 
-            foreach (var updatedOrderDetail in orderDetails)
+          
+            var currentUser = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
+            _logger.LogInformation("EmployeeId: {EmployeeId}", currentUser?.Value);
+            if (currentUser == null)
+            {
+                TempData["ErrorMessage"] = "Unable to retrieve the current employee's ID.";
+                return RedirectToAction("PendingOrders");
+            }
+            else
+            {
+                var currentEmployeeId = _context.Users.Where(u => u.Id == currentUser.Value).Select(u => u.EmployeeId).FirstOrDefault();
+                _logger.LogInformation("EmployeeId: {EmployeeId}", currentEmployeeId.Value);
+
+
+                if (order.EmployeeId != currentEmployeeId)
+                {
+                    TempData["ErrorMessage"] = "You are not authorized to update this order.";
+                    return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                }
+            }
+            foreach (var updatedOrderDetail in updatedOrderDetails)
             {
                 var orderDetail = order.OrderDetails.FirstOrDefault(od => od.ProductId == updatedOrderDetail.ProductId);
                 if (orderDetail != null)
                 {
-                    var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
+                    var product = orderDetail.Product;
                     if (product != null)
                     {
                         _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
@@ -498,25 +538,15 @@ namespace IndividualNorthwindEshop.Controllers
 
             try
             {
-                foreach (var updatedOrderDetail in orderDetails)
-                {
-                    var orderDetail = order.OrderDetails.FirstOrDefault(od => od.ProductId == updatedOrderDetail.ProductId);
-                    if (orderDetail != null)
-                    {
-                        var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
-                        if (product != null)
-                        {
-                            int quantityChange = updatedOrderDetail.Quantity - orderDetail.Quantity;
-                            product.ReservedStock += quantityChange;
-                            orderDetail.Quantity = updatedOrderDetail.Quantity;
-                        }
-                    }
-                }
-                order.IsBeingHandled = false;
+                UpdateOrderDetails(order, updatedOrderDetails);
+                await _context.SaveChangesAsync();
+
+               
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Order quantities updated for order with ID: {OrderId}", order.OrderId);
                 TempData["SuccessMessage"] = "Order quantities updated successfully.";
+                TempData["UpdateSuccess"] = true;
                 return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
             catch (DbUpdateConcurrencyException ex)
@@ -532,30 +562,67 @@ namespace IndividualNorthwindEshop.Controllers
                 return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
         }
+
+
+        private void UpdateOrderDetails(Order order, List<UpdatedOrderDetailViewModel> updatedOrderDetails)
+        {
+            foreach (var updatedOrderDetail in updatedOrderDetails)
+            {
+                var orderDetail = order.OrderDetails.FirstOrDefault(od => od.ProductId == updatedOrderDetail.ProductId);
+                if (orderDetail != null)
+                {
+                    var product = orderDetail.Product;
+                    if (product != null)
+                    {
+                        int quantityChange = updatedOrderDetail.Quantity - orderDetail.Quantity;
+                        orderDetail.Quantity = (short)updatedOrderDetail.Quantity;
+
+                        if (product != null)
+                        {
+                            product.ReservedStock += quantityChange;
+                            _context.Update(product);
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+
         [HttpGet]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> EditOrderQuantities(int id)
         {
             var order = await _context.Orders
-    .Include(o => o.OrderDetails)
-        .ThenInclude(od => od.Product)
-    .FirstOrDefaultAsync(o => o.OrderId == id);
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == id);
 
             if (order == null)
             {
                 return NotFound();
             }
 
-            if (order.Status != "Being Reviewed")
+            if (order.Status != OrderStatus.BeingHandled)
             {
                 TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
                 return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
 
-            return View(order);
+            var viewModel = order.OrderDetails.Select(od => new UpdatedOrderDetailViewModel
+            {
+                ProductId = od.ProductId,
+                Quantity = od.Quantity,
+                Product = od.Product,
+                Order = order
+            }).ToList();
+
+            return View(viewModel);
         }
-
-
 
 
 
@@ -573,15 +640,15 @@ namespace IndividualNorthwindEshop.Controllers
             {
                 return NotFound();
             }
-                if (!order.IsBeingHandled)
-                {
-                    order.IsBeingHandled = true;
-                    order.Status = "Being Reviewed";
-                    order.HandlingStartTime = DateTime.Now;
-                    await _context.SaveChangesAsync();
-                }
-                
-            
+
+            if (order.Status != OrderStatus.BeingHandled)
+            {
+                order.Status = OrderStatus.BeingHandled;
+                order.HandlingStartTime = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+
+
 
             var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
             var currentProducts = await _context.Products
@@ -599,16 +666,9 @@ namespace IndividualNorthwindEshop.Controllers
 
             try
             {
-                foreach (var orderDetail in order.OrderDetails)
-                {
-                    var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
-                    if (product != null)
-                    {
-                        product.ReservedStock -= orderDetail.Quantity;
-                    }
-                }
+                await _context.SaveChangesAsync();
 
-               
+                RevertProductStocks(order, currentProducts);
                 await _context.SaveChangesAsync();
 
                 _ = SendOrderCancellationNotification(order);
@@ -629,6 +689,25 @@ namespace IndividualNorthwindEshop.Controllers
                 return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
         }
+
+        private void RevertProductStocks(Order order, List<Product> currentProducts)
+        {
+            foreach (var orderDetail in order.OrderDetails)
+            {
+                var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
+                if (product != null)
+                {
+                    product.ReservedStock -= orderDetail.Quantity;
+                }
+            }
+        }
+
+
+
+
+
+
+
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> ConfirmCancelOrder(int id, string cancellationReason)
@@ -639,28 +718,19 @@ namespace IndividualNorthwindEshop.Controllers
             {
                 return NotFound();
             }
-            order.Status = "Cancelled";
-            order.IsHandled = true;
-            order.IsBeingHandled = false;
+
+            order.Status = OrderStatus.Cancelled;
             order.HandlingStartTime = null;
             order.CancellationReason = cancellationReason;
 
-            // Revert the stock and reserved stock for each product in the order
-            foreach (var orderDetail in order.OrderDetails)
-            {
-                var product = await _context.Products.FindAsync(orderDetail.ProductId);
-                if (product != null)
-                {
-                    product.UnitsInStock += orderDetail.Quantity;
-                    product.ReservedStock -= orderDetail.Quantity;
-                }
-            }
-
             await _context.SaveChangesAsync();
-
 
             return RedirectToAction("PendingOrders", "Orders");
         }
+
+
+
+
         [HttpGet]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> OrderCancelled(int id)
@@ -680,19 +750,20 @@ namespace IndividualNorthwindEshop.Controllers
         public void ResetStaleOrders()
         {
             var staleOrders = _context.Orders
-                .Where(o => o.Status == "BeingReviewed" && o.IsBeingHandled &&
+                .Where(o => o.Status == OrderStatus.BeingHandled &&
                             o.HandlingStartTime < DateTime.Now.AddMinutes(-10))
                 .ToList();
 
             foreach (var order in staleOrders)
             {
-                order.IsBeingHandled = false;
-                order.Status = "Pending";
+                order.Status = OrderStatus.Pending;
                 order.HandlingStartTime = null;
             }
 
             _context.SaveChanges();
         }
+
+
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> RevertToPending(int id)
@@ -716,9 +787,9 @@ namespace IndividualNorthwindEshop.Controllers
                 }
             }
 
-            order.Status = "Pending";
-            order.IsHandled = false;
-            order.IsBeingHandled = false;
+
+            order.Status = OrderStatus.Pending;
+
             order.HandlingStartTime = null;
            
             await _context.SaveChangesAsync();

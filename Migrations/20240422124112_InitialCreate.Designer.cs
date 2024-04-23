@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace IndividualNorthwindEshop.Migrations.UserRelationships
+namespace IndividualNorthwindEshop.Migrations
 {
     [DbContext(typeof(MasterContext))]
-    [Migration("20240325103850_AddTimestampToProducts")]
-    partial class AddTimestampToProducts
+    [Migration("20240422124112_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -530,6 +530,10 @@ namespace IndividualNorthwindEshop.Migrations.UserRelationships
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
 
+                    b.Property<string>("CancellationReason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CustomerId")
                         .HasMaxLength(5)
                         .HasColumnType("nchar(5)")
@@ -549,10 +553,10 @@ namespace IndividualNorthwindEshop.Migrations.UserRelationships
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsHandled")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("HandlingStartTime")
+                        .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("OrderDate")
+                    b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime");
 
                     b.Property<DateTime?>("RequiredDate")
@@ -588,8 +592,8 @@ namespace IndividualNorthwindEshop.Migrations.UserRelationships
                     b.Property<DateTime?>("ShippedDate")
                         .HasColumnType("datetime");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("OrderId");
 

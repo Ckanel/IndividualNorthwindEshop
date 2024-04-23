@@ -330,7 +330,7 @@ public partial class MasterContext : IdentityDbContext<User>
         });
 
         modelBuilder.Entity<Order>(entity =>
-        {
+        {   
             entity.HasIndex(e => e.CustomerId, "CustomerID");
 
             entity.HasIndex(e => e.CustomerId, "CustomersOrders");
@@ -346,7 +346,8 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.HasIndex(e => e.ShippedDate, "ShippedDate");
 
             entity.HasIndex(e => e.ShipVia, "ShippersOrders");
-
+            entity.Property(e => e.CancellationReason)
+       .IsRequired(false);
             entity.Property(e => e.OrderId).HasColumnName("OrderID");
             entity.Property(e => e.CustomerId)
                 .HasMaxLength(5)
@@ -367,6 +368,8 @@ public partial class MasterContext : IdentityDbContext<User>
             entity.Property(e => e.ShippedDate).HasColumnType("datetime");
             entity.Property(e => e.GuestEmail)
            .HasMaxLength(100);
+            entity.Property(o => o.Status)
+        .HasColumnName("OrderStatusId");
             entity.HasOne(d => d.Customer).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.CustomerId)
                 .HasConstraintName("FK_Orders_Customers");

@@ -1,13 +1,11 @@
-﻿@model Order
+﻿@model List<UpdatedOrderDetailViewModel>
 
 @{
     ViewData["Title"] = "Update Order Quantities";
 }
 
 <h2>Update Order Quantities</h2>
-<form asp-action="UpdateOrderQuantities" asp-route-id="@Model.OrderId" method="post">
-    <input type="hidden" asp-for="OrderId" />
-    
+<form asp-action="UpdateOrderQuantities" asp-route-id="@Model.FirstOrDefault()?.Order.OrderId" method="post">
     <table class="table">
         <thead>
             <tr>
@@ -17,14 +15,14 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var orderDetail in Model.OrderDetails)
+            @for (int i = 0; i < Model.Count; i++)
             {
                 <tr>
-                    <td>@orderDetail.Product.ProductName</td>
-                    <td>@orderDetail.Quantity</td>
+                    <td>@Model[i].Product.ProductName</td>
+                    <td>@Model[i].Quantity</td>
                     <td>
-                        <input type="hidden" asp-for="@orderDetail.ProductId" />
-                        <input type="number" asp-for="@orderDetail.Quantity" min="1" class="form-control" />
+                        <input type="hidden" asp-for="@Model[i].ProductId" />
+                        <input type="number" asp-for="@Model[i].Quantity" min="1" class="form-control" />
                     </td>
                 </tr>
             }
@@ -33,7 +31,12 @@
 
     <div class="form-group">
         <button type="submit" class="btn btn-primary">Update Quantities</button>
-        <a asp-action="HandleOrder" asp-route-id="@Model.OrderId" class="btn btn-secondary">Cancel</a>
+        <a asp-action="HandleOrder" asp-route-id="@Model.FirstOrDefault()?.Order.OrderId" class="btn btn-secondary" onclick="setCancelFlag()">Cancel</a>
+        <script>
+            function setCancelFlag() {
+            @TempData["OperationCancelled"] = true; 
+            }
+        </script>
     </div>
 </form>
 

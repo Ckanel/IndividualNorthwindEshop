@@ -5,7 +5,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Products</h1>
+<h2 class="text-center my-4">Products</h2>
 
 @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
 {
@@ -36,7 +36,7 @@
                     <div class="d-flex justify-content-between">
                         @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
                         {
-                            <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-primary">Edit</a>
+                            <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-warning">Edit</a>
                             <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
                             <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
                         }else
@@ -78,7 +78,7 @@
                                 <p class="card-text text-danger">Discontinued</p>
                             }
                         <div class="d-flex justify-content-between">
-                                <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-primary">Edit</a>
+                                <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-sm btn-warning">Edit</a>
                                 <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
                                 <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
                         </div>

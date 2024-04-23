@@ -5,13 +5,13 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Categories</h1>
+<h2 class="text-center my-4">Categories</h2>
 
 @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
 {
-    <p>
-        <a asp-action="Create">Create New</a>
-    </p>
+    <div class="text-right mb-3">
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </div>
 }
 
 <div class="row">
@@ -28,8 +28,8 @@
                     <div class="d-flex justify-content-between">
                         @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
                         {
-                            <a href="@Url.Action("Details", new { id = item.CategoryId })" class="btn btn-info">Details</a>
-                            <a href="@Url.Action("Edit", new { id = item.CategoryId })" class="btn btn-primary">Edit</a>
+                            <a href="@Url.Action("Edit", new { id = item.CategoryId })" class="btn btn-warning">Edit</a>
+                            <a href="@Url.Action("Details", new { id = item.CategoryId })" class="btn btn-sm btn-info">Details</a>
                             <a href="@Url.Action("Delete", new { id = item.CategoryId })" class="btn btn-danger">Delete</a>
                         }
                     </div>

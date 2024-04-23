@@ -36,11 +36,17 @@ public partial class Order
     [MaxLength(100)]
     [EmailAddress]
     public string? GuestEmail { get; set; }
-    public bool IsHandled { get; set; }
-    public bool IsBeingHandled { get; set; }
-    public string? Status { get; set; } 
+    public enum OrderStatus
+    {
+        Pending,
+        BeingHandled,
+        Completed,
+        Cancelled
+    }
+    public OrderStatus Status { get; set; }
+
     public DateTime? HandlingStartTime { get; set; }
-    public string CancellationReason { get; set; }
+    public string? CancellationReason { get; set; }
     public virtual Customer? Customer { get; set; }
 
     public virtual Employee? Employee { get; set; }

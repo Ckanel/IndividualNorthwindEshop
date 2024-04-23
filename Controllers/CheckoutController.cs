@@ -1,5 +1,6 @@
 ﻿using IndividualNorthwindEshop.Data;
 using IndividualNorthwindEshop.Models;
+using IndividualNorthwindEshop.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -10,112 +11,81 @@ namespace IndividualNorthwindEshop.Controllers
     public class CheckoutController : Controller
     {
         private readonly MasterContext _context;
+        private readonly CartService _cartService;
+        private readonly OrderService _orderService;
 
-        public CheckoutController(MasterContext context)
+        public CheckoutController(MasterContext context, CartService cartService, OrderService orderService)
         {
             _context = context;
+            _cartService = cartService;
+            _orderService = orderService;
         }
 
         public IActionResult Index()
         {
-            // Retrieve the user's cart
             var customerId = User.FindFirstValue("CustomerId");
-            var cart = _context.Carts.FirstOrDefault(c => c.CustomerId == customerId);
-            Debug.WriteLine($"CustomerId: {customerId}");
-            Debug.WriteLine($"Cart: {cart}");
+            var cart = _cartService.GetOrCreateCart(customerId, HttpContext);
 
             if (cart == null)
             {
-                // Handle the case when the user doesn't have a cart
                 return RedirectToAction("Index", "Cart");
             }
 
-            // Retrieve the user's shopping cart items
-            var cartItems = _context.CartItems.Include(item => item.Product)
-                .Where(item => item.CartId == cart.CartId)
-                .ToList();
+            var cartItems = cart.CartItems.ToList();
 
-            // Pass the cart items to the view
             return View(cartItems);
         }
 
-    
         [HttpPost]
         public IActionResult ProcessOrder(CheckoutModel model)
         {
-            Cart cart = null;
-            var customerId = User.FindFirstValue("CustomerId");
-
-            if (customerId != null)
+            // Validate the model
+            if (!ModelState.IsValid)
             {
-                // User is authenticated, retrieve the cart associated with the customer
-                cart = _context.Carts.FirstOrDefault(c => c.CustomerId == customerId);
-            }
-            else
-            {
-                // User is not authenticated, retrieve the cart from the session
-                var cartId = HttpContext.Session.GetInt32("CartId");
-                if (cartId.HasValue)
-                {
-                    cart = _context.Carts.FirstOrDefault(c => c.CartId == cartId.Value);
-                }
+                return BadRequest(ModelState);
             }
 
-            if (cart == null)
+            string customerId = GetCustomerId();
+            Cart cart = _cartService.GetOrCreateCart(customerId, HttpContext);
+
+            if (cart == null || !cart.CartItems.Any())
             {
-                // Handle the case when the user doesn't have a cart
                 return RedirectToAction("Index", "Cart");
             }
 
-            var cartItems = _context.CartItems.Include(item => item.Product)
-                .Where(item => item.CartId == cart.CartId)
-                .ToList();
+            Order order = CreateOrder(customerId, model, cart.CartItems.ToList());
+            
 
-            // Create a new order
-            var order = new Order
-            {
-                CustomerId = customerId, // Set the CustomerId to null for unauthenticated users
-                OrderDate = DateTime.Now,
-                GuestEmail = model.GuestEmail,
-                ShipName = model.CustomerName,
-                ShipAddress = model.Address,
-                ShipCity = model.City,
-                ShipCountry = model.Country,
-                ShipPostalCode = model.PostalCode,
-                IsHandled = false,
-                Status = "Pending"
-            };
+            ClearCart(customerId, cart.CartItems.ToList());
 
-            // Add the order to the database
-            _context.Orders.Add(order);
-            _context.SaveChanges();
+            return RedirectToAction("Confirmation", new { orderId = order.OrderId });
+        }
 
-            // Create order items and associate them with the order
-            foreach (var cartItem in cartItems)
-            {
-                var orderDetail = new OrderDetail
-                {
-                    OrderId = order.OrderId,
-                    ProductId = cartItem.ProductId,
-                    Quantity = (short)cartItem.Quantity,
-                    UnitPrice = (decimal)cartItem.Product.UnitPrice
-                };
-                _context.OrderDetails.Add(orderDetail);
-            }
-            _context.SaveChanges();
+        private string GetCustomerId()
+        {
+            // Retrieve the customer ID from the authenticated user or session
+            return User.FindFirstValue("CustomerId");
+        }
 
-            // Clear the user's shopping cart
+        private Order CreateOrder(string customerId, CheckoutModel model, List<CartItem> cartItems)
+        {
+            Order order = _orderService.CreateOrder(customerId, model, cartItems);
+            _orderService.CreateOrderDetails(order, cartItems);
+
+            return order;
+        }
+
+        private void ClearCart(string customerId, List<CartItem> cartItems)
+        {
+            // Clear the cart items from the database
             _context.CartItems.RemoveRange(cartItems);
             _context.SaveChanges();
 
             // Clear the cart ID from the session for unauthenticated users
-            if (customerId == null)
+            if (string.IsNullOrEmpty(customerId))
             {
                 HttpContext.Session.Remove("CartId");
             }
-
-            // Redirect to the order confirmation page
-            return RedirectToAction("Confirmation", new { orderId = order.OrderId });
         }
 
 
@@ -128,8 +98,8 @@ namespace IndividualNorthwindEshop.Controllers
                 .ThenInclude(od => od.Product)
                 .FirstOrDefault(o => o.OrderId == orderId);
 
-            // Pass the order to the view
             return View(order);
         }
     }
 }
+

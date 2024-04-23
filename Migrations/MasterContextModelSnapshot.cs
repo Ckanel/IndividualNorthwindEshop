@@ -553,12 +553,6 @@ namespace IndividualNorthwindEshop.Migrations
                     b.Property<DateTime?>("HandlingStartTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsBeingHandled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsHandled")
-                        .HasColumnType("bit");
-
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime");
 
@@ -595,8 +589,8 @@ namespace IndividualNorthwindEshop.Migrations
                     b.Property<DateTime?>("ShippedDate")
                         .HasColumnType("datetime");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("OrderId");
 
