@@ -1,5 +1,5 @@
-﻿using IndividualNorthwindEshop.Data;
-using IndividualNorthwindEshop.Models;
+﻿using CommonData.Data;
+using CommonData.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

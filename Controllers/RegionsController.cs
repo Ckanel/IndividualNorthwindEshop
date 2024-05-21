@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using IndividualNorthwindEshop.Models;
-using IndividualNorthwindEshop.Data;
+using CommonData.Models;
+using CommonData.Data;
 using Microsoft.AspNetCore.Authorization;
 
 namespace IndividualNorthwindEshop.Controllers

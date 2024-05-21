@@ -1,5 +1,5 @@
-﻿using IndividualNorthwindEshop.Data;
-using IndividualNorthwindEshop.Models;
+﻿using CommonData.Data;
+using CommonData.Models;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System;

@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using IndividualNorthwindEshop.Models;
-using IndividualNorthwindEshop.Data;
+using CommonData.Models;
+using CommonData.Data;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using static IndividualNorthwindEshop.Models.Order;
+using static CommonData.Models.Order;
 using IndividualNorthwindEshop.Services;
-
+//using ETL.Extract;
 namespace IndividualNorthwindEshop.Controllers
 {
     public class OrdersController : Controller
@@ -19,15 +19,16 @@ namespace IndividualNorthwindEshop.Controllers
         private readonly MasterContext _context;
         private readonly ILogger<OrdersController> _logger;
         private readonly IPaginationService _paginationService;
-
+        //private readonly OrderRepository _orderRepository;
         public OrdersController(MasterContext context, ILogger<OrdersController> logger, IPaginationService paginationService)
         {
             _paginationService = paginationService;
             _context = context;
             _logger = logger;
+            //_orderRepository = _orderRepository;
         }
 
-        
+
         public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 25)
         {
             var query = _context.Orders
@@ -41,7 +42,7 @@ namespace IndividualNorthwindEshop.Controllers
             return View(paginatedList);
         }
 
-
+        
         // GET: Orders/Details/5
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> Details(int? id)
@@ -847,6 +848,9 @@ namespace IndividualNorthwindEshop.Controllers
                 _logger.LogError(ex, "Failed to send order cancellation notification for order with ID: {OrderId}", order.OrderId);
             }
         }
+
+        
+
 
 
     }

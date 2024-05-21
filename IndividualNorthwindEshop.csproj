@@ -25,4 +25,12 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CommonData\CommonData.csproj" />
+    <ProjectReference Include="..\ETL\ETL.csproj" />
+  </ItemGroup>
+
+
+  
+
 </Project>

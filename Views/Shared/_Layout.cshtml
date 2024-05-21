@@ -30,7 +30,7 @@
                         </li>
 
                         @using Microsoft.AspNetCore.Identity
-                        @inject SignInManager<IndividualNorthwindEshop.Models.User> SignInManager
+                        @inject SignInManager<CommonData.Models.User> SignInManager
                         @if (SignInManager.IsSignedIn(User))
                         {
                             @if (User.IsInRole("Customer"))
