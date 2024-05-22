@@ -1,0 +1,213 @@
+﻿@model IndividualNorthwindEshop.Models.DashboardViewModel
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="form-group">
+            <label for="chartSelect">Select Chart:</label>
+            <select class="form-control" id="chartSelect" onchange="showChart()">
+                <option value="salesChartContainer">Sales Performance Over Time</option>
+                <option value="productChartContainer">Top Performing Products</option>
+                <option value="customerChartContainer">Customer Spending Insights</option>
+                <option value="salesForecastChartContainer">Sales Forecast</option>
+                <option value="discountEffectivenessChartContainer">Discount Effectiveness</option>
+                <option value="employeePerformanceChartContainer">Employee Performance</option>
+            </select>
+        </div>
+
+        <div class="btn-group mb-3" role="group" aria-label="Basic example">
+            <button class="btn btn-primary mr-2" onclick="sortData('asc')">Sort Ascending</button>
+            <button class="btn btn-danger mr-2" onclick="sortData('desc')">Sort Descending</button>
+            <button class="btn btn-secondary" onclick="resetData()">Reset</button>
+        </div>
+
+        <div class="chart-container" id="salesChartContainer">
+            <h1>Sales Performance Over Time</h1>
+            <canvas id="salesChart"></canvas>
+        </div>
+
+        <div class="chart-container" id="productChartContainer">
+            <h1>Top Performing Products</h1>
+            <canvas id="productChart"></canvas>
+        </div>
+
+        <div class="chart-container" id="customerChartContainer">
+            <h1>Customer Spending Insights</h1>
+            <canvas id="customerChart"></canvas>
+        </div>
+
+        <div class="chart-container" id="salesForecastChartContainer">
+            <h1>Sales Forecast</h1>
+            <canvas id="salesForecastChart"></canvas>
+        </div>
+
+        <div class="chart-container" id="discountEffectivenessChartContainer">
+            <h1>Discount Effectiveness</h1>
+            <canvas id="discountEffectivenessChart"></canvas>
+        </div>
+
+        <div class="chart-container" id="employeePerformanceChartContainer">
+            <h1>Employee Performance</h1>
+            <canvas id="employeePerformanceChart"></canvas>
+        </div>
+    </div>
+
+    <style>
+        .chart-container {
+            display: none;
+        }
+    </style>
+    <script>
+        var charts = {};
+
+        // Data initialization
+        var salesData = @Html.Raw(ViewBag.SalesDataJson);
+        var originalSalesData = [...salesData]; // Copy for reset
+
+        var productData = @Html.Raw(ViewBag.ProductPerformanceJson);
+        var originalProductData = [...productData];
+
+        var customerData = @Html.Raw(ViewBag.CustomerInsightsJson);
+        var originalCustomerData = [...customerData];
+
+        var salesForecastData = @Html.Raw(ViewBag.SalesForecastJson);
+        var originalSalesForecastData = [...salesForecastData];
+
+        var discountData = @Html.Raw(ViewBag.DiscountEffectivenessJson);
+        var originalDiscountData = [...discountData];
+
+        var employeeData = @Html.Raw(ViewBag.EmployeePerformanceJson);
+        var originalEmployeeData = [...employeeData];
+
+        var chartConfig = [
+            {
+                id: 'salesChart',
+                type: 'line',
+                dataFunc: data => ({
+                    labels: data.map(d => `${d.Year}-${d.Month}`),
+                    datasets: [{ label: 'Total Sales', data: data.map(d => d.TotalSales), borderWidth: 1, borderColor: 'rgba(75, 192, 192, 1)' }]
+                }),
+                originalData: originalSalesData,
+                currentData: salesData,
+                sortProperty: 'TotalSales'
+            },
+            {
+                id: 'productChart',
+                type: 'bar',
+                dataFunc: data => ({
+                    labels: data.map(d => ` ${d.ProductId}`),
+                    datasets: [{ label: 'Quantity Sold', data: data.map(d => d.TotalQuantitySold), borderWidth: 1, backgroundColor: 'rgba(153, 102, 255, 0.2)', borderColor: 'rgba(153, 102, 255, 1)' }]
+                }),
+                originalData: originalProductData,
+                currentData: productData,
+                sortProperty: 'TotalQuantitySold'
+            },
+            {
+                id: 'customerChart',
+                type: 'bar',
+                dataFunc: data => ({
+                    labels: data.map(d => ` ${d.CustomerId}`),
+                    datasets: [{ label: 'Total Spent', data: data.map(d => d.TotalSpent), borderWidth: 1, backgroundColor: 'rgba(255, 159, 64, 0.2)', borderColor: 'rgba(255, 159, 64, 1)' }]
+                }),
+                originalData: originalCustomerData,
+                currentData: customerData,
+                sortProperty: 'TotalSpent'
+            },
+            {
+                id: 'salesForecastChart',
+                type: 'line',
+                dataFunc: data => ({
+                    labels: data.map(d => `${d.Year}-${d.Month}`),
+                    datasets: [{ label: 'Predicted Sales', data: data.map(d => d.PredictedSales), borderWidth: 1, borderColor: 'rgba(54, 162, 235, 1)' }]
+                }),
+                originalData: originalSalesForecastData,
+                currentData: salesForecastData,
+                sortProperty: 'PredictedSales'
+            },
+            {
+                id: 'discountEffectivenessChart',
+                type: 'bar',
+                dataFunc: data => ({
+                    labels: data.map(d => `${d.DiscountRate}%`),
+                    datasets: [{ label: 'Total Sales', data: data.map(d => d.TotalSales), borderWidth: 1, backgroundColor: 'rgba(255, 206, 86, 0.2)', borderColor: 'rgba(255, 206, 86, 1)' }]
+                }),
+                originalData: originalDiscountData,
+                currentData: discountData,
+                sortProperty: 'TotalSales'
+            },
+            {
+                id: 'employeePerformanceChart',
+                type: 'bar',
+                dataFunc: data => ({
+                    labels: data.map(d => ` ${d.EmployeeId}`),
+                    datasets: [{ label: 'Orders Handled', data: data.map(d => d.OrdersHandled), borderWidth: 1, backgroundColor: 'rgba(75, 192, 192, 0.2)', borderColor: 'rgba(75, 192, 192, 1)' }]
+                }),
+                originalData: originalEmployeeData,
+                currentData: employeeData,
+                sortProperty: 'OrdersHandled'
+            }
+        ];
+
+        chartConfig.forEach(config => {
+            var ctx = document.getElementById(config.id).getContext('2d');
+            charts[config.id] = new Chart(ctx, {
+                type: config.type,
+                data: config.dataFunc(config.currentData)
+            });
+        });
+
+        // Function to show selected chart
+        function showChart() {
+            var selectedChart = document.getElementById('chartSelect').value;
+            document.querySelectorAll('.chart-container').forEach(container => {
+                container.style.display = 'none';
+            });
+            document.getElementById(selectedChart).style.display = 'block';
+        }
+
+        // Initial call to show the first chart
+        showChart();
+
+        // Sorting function
+        function sortData(order) {
+            var selectedValue = document.getElementById('chartSelect').value.replace('Container', '');
+            var selectedChartConfig = chartConfig.find(config => config.id === selectedValue);
+
+            var sortProperty = selectedChartConfig.sortProperty;
+            if (order === 'asc') {
+                selectedChartConfig.currentData.sort((a, b) => a[sortProperty] - b[sortProperty]);
+            } else if (order === 'desc') {
+                selectedChartConfig.currentData.sort((a, b) => b[sortProperty] - a[sortProperty]);
+            }
+            updateChart(selectedValue, selectedChartConfig.dataFunc(selectedChartConfig.currentData));
+        }
+
+        // Reset function
+        function resetData() {
+            var selectedValue = document.getElementById('chartSelect').value.replace('Container', '');
+            var selectedChartConfig = chartConfig.find(config => config.id === selectedValue);
+
+            selectedChartConfig.currentData = [...selectedChartConfig.originalData];
+            updateChart(selectedValue, selectedChartConfig.dataFunc(selectedChartConfig.currentData));
+        }
+
+        // Update chart function
+        function updateChart(chartId, chartData) {
+            var chart = charts[chartId];
+            if (!chart) {
+                console.error(`Chart instance for id ${chartId} is not defined`);
+                return;
+            }
+            chart.data = chartData;
+            chart.update();
+        }
+    </script>
+</body>
+</html>

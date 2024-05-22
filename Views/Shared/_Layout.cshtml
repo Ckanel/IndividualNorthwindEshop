@@ -28,7 +28,10 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Products" asp-action="Index">Products</a>
                         </li>
-
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">Graphs</a>
+                        </li>
+                        
                         @using Microsoft.AspNetCore.Identity
                         @inject SignInManager<CommonData.Models.User> SignInManager
                         @if (SignInManager.IsSignedIn(User))

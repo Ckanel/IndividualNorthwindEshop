@@ -1,5 +1,6 @@
 ﻿USE ETLDatabase;
 
+-- Creating the CustomerInsights table
 CREATE TABLE CustomerInsights (
     CustomerId NVARCHAR(50) PRIMARY KEY,
     TotalOrders INT NOT NULL,
@@ -51,7 +52,7 @@ CREATE TABLE TransformedOrderDetail (
     Quantity SMALLINT NOT NULL,
     Discount FLOAT NOT NULL,
     TotalAmount DECIMAL(18, 2) NOT NULL,
-    FOREIGN KEY (ProductId) REFERENCES ProductPerformance(ProductId) 
+    FOREIGN KEY (ProductId) REFERENCES ProductPerformance(ProductId) -- assuming ProductId in ProductPerformance is related
 );
 
 -- Creating the TransformedOrder table

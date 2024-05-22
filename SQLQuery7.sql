@@ -1,16 +1,16 @@
-﻿-- Check Customer Insights
+﻿---- Check Customer Insights
 SELECT * FROM CustomerInsights;
 
--- Check Product Performance
+---- Check Product Performance
 SELECT * FROM ProductPerformance;
 
--- Check Employee Performance
+---- Check Employee Performance
 SELECT * FROM EmployeePerformance;
 
--- Check Discount Effectiveness
+---- Check Discount Effectiveness
 SELECT * FROM DiscountEffectiveness;
 
--- Check Sales Forecast
+---- Check Sales Forecast
 SELECT * FROM SalesForecast;
 SELECT *  FROM SalesData;
 SELECT * FROM TransformedOrderDetail;

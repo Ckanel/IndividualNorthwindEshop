@@ -8,6 +8,8 @@ using ETL.Extract;
 using ETL.Transform;
 using ETL.Load;
 using System.Diagnostics;
+using ETL.Transform.DataAccess;
+using System.Configuration;
 namespace IndividualNorthwindEshop
 {
     public class Program
@@ -43,13 +45,13 @@ namespace IndividualNorthwindEshop
                 builder.Services.AddScoped<OrderService>();
                 builder.Services.AddScoped<IPaginationService, PaginationService>();
                 builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
-
+                
                 // Register ETL services
                 builder.Services.AddScoped<OrderRepository>();
                 builder.Services.AddScoped<OrderTransform>();
                 builder.Services.AddScoped<ETLProcess>();
                 string connectionString = builder.Configuration.GetConnectionString("ETLDatabase");
-                Debug.WriteLine($"ETL Database Connection String: {connectionString}");
+                builder.Services.AddSingleton(new ETLDataExportService(connectionString));
                 builder.Services.AddScoped(sp => new LoadProcess(connectionString));
 
                 builder.Services.AddHostedService<ETLBackgroundService>();
