@@ -19,12 +19,14 @@ namespace IndividualNorthwindEshop.Controllers
         private readonly MasterContext _context;
         private readonly ILogger<OrdersController> _logger;
         private readonly IPaginationService _paginationService;
+        private readonly EmailService _emailService;
         //private readonly OrderRepository _orderRepository;
-        public OrdersController(MasterContext context, ILogger<OrdersController> logger, IPaginationService paginationService)
+        public OrdersController(MasterContext context, ILogger<OrdersController> logger, IPaginationService paginationService, EmailService emailService)
         {
             _paginationService = paginationService;
             _context = context;
             _logger = logger;
+            _emailService = emailService;
             //_orderRepository = _orderRepository;
         }
 
@@ -811,16 +813,17 @@ namespace IndividualNorthwindEshop.Controllers
         {
             try
             {
-                // Implement your logic to send the order completion notification
-                // For example, you can send an email or push notification to the customer
-                // You can use a notification service, email service, or any other means of communication
+                var emailContent = $"Dear customer,\n\nYour order with ID: {order.OrderId} has been completed.\n\nThank you for your purchase!";
+                var response = await _emailService.SendSimpleMessageAsync(order.GuestEmail, "Order Completed", emailContent);
 
-                // Example code for sending an email notification:
-                // var emailService = new EmailService();
-                // var emailContent = $"Dear customer,\n\nYour order with ID: {order.OrderId} has been completed.\n\nThank you for your purchase!";
-                // await emailService.SendEmailAsync(order.CustomerEmail, "Order Completed", emailContent);
-
-                _logger.LogInformation("Order completion notification sent for order with ID: {OrderId}", order.OrderId);
+                if (response.IsSuccessful)
+                {
+                    _logger.LogInformation("Order completion notification sent for order with ID: {OrderId}", order.OrderId);
+                }
+                else
+                {
+                    _logger.LogError("Failed to send order completion notification for order with ID: {OrderId}. Response: {Response}", order.OrderId, response.Content);
+                }
             }
             catch (Exception ex)
             {
@@ -832,16 +835,17 @@ namespace IndividualNorthwindEshop.Controllers
         {
             try
             {
-                // Implement your logic to send the order cancellation notification
-                // For example, you can send an email or push notification to the customer
-                // You can use a notification service, email service, or any other means of communication
+                var emailContent = $"Dear customer,\n\nYour order with ID: {order.OrderId} has been cancelled.\n\nWe apologize for any inconvenience this may cause.";
+                var response = await _emailService.SendSimpleMessageAsync(order.GuestEmail, "Order Cancelled", emailContent);
 
-                // Example code for sending an email notification:
-                // var emailService = new EmailService();
-                // var emailContent = $"Dear customer,\n\nYour order with ID: {order.OrderId} has been completed.\n\nThank you for your purchase!";
-                // await emailService.SendEmailAsync(order.CustomerEmail, "Order Completed", emailContent);
-
-                _logger.LogInformation("Order completion notification sent for order with ID: {OrderId}", order.OrderId);
+                if (response.IsSuccessful)
+                {
+                    _logger.LogInformation("Order cancellation notification sent for order with ID: {OrderId}", order.OrderId);
+                }
+                else
+                {
+                    _logger.LogError("Failed to send order cancellation notification for order with ID: {OrderId}. Response: {Response}", order.OrderId, response.Content);
+                }
             }
             catch (Exception ex)
             {
@@ -849,7 +853,7 @@ namespace IndividualNorthwindEshop.Controllers
             }
         }
 
-        
+
 
 
 
