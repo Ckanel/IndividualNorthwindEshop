@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETL", "..\ETL\ETL.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETL.UnitTests", "..\ETL.UnitTests\ETL.UnitTests\ETL.UnitTests.csproj", "{D1DDB261-2E9A-49C8-BAAC-9F6360A97205}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonData", "..\CommonData\CommonData.csproj", "{EB5644DC-2DFE-4E78-942B-C31D93017E4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonData", "..\CommonData\CommonData.csproj", "{EB5644DC-2DFE-4E78-942B-C31D93017E4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

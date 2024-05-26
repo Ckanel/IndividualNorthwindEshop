@@ -45,7 +45,7 @@ namespace IndividualNorthwindEshop
                 builder.Services.AddScoped<OrderService>();
                 builder.Services.AddScoped<IPaginationService, PaginationService>();
                 builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
-                
+
                 // Register ETL services
                 builder.Services.AddScoped<OrderRepository>();
                 builder.Services.AddScoped<OrderTransform>();

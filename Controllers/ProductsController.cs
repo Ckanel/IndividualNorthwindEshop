@@ -15,10 +15,12 @@ namespace IndividualNorthwindEshop.Controllers
     public class ProductsController : Controller
     {
         private readonly MasterContext _context;
+        private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(MasterContext context)
+        public ProductsController(MasterContext context, ILogger<ProductsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
         [AllowAnonymous]
         // GET: Products
@@ -27,7 +29,20 @@ namespace IndividualNorthwindEshop.Controllers
             var masterContext = _context.Products.Include(p => p.Category).Include(p => p.Supplier);
             return View(await masterContext.ToListAsync());
         }
-        
+        public IActionResult GetProductPhoto(int id)
+        {
+            var product = _context.Products
+                .Where(p => p.ProductId == id)
+                .Select(p => new { p.Photo, p.ProductName })
+                .FirstOrDefault();
+
+            if (product == null || product.Photo == null)
+            {
+                return NotFound();
+            }
+
+            return File(product.Photo, "image/jpeg");
+        }
         [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Details(int? id)
         {
@@ -62,14 +77,35 @@ namespace IndividualNorthwindEshop.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Employee,Manager")]
-        public async Task<IActionResult> Create([Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued")] Product product)
+        public async Task<IActionResult> Create([Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued")] Product product, IFormFile photo)
         {
+            ModelState.Remove("Timestamp");
             if (ModelState.IsValid)
             {
-                _context.Add(product);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+
+                    
+                    if (photo != null && photo.Length > 0)
+                    {
+                        using var memoryStream = new MemoryStream();
+                        await photo.CopyToAsync(memoryStream);
+                        product.Photo = memoryStream.ToArray();
+                    }
+
+                    _context.Add(product);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Product {ProductId} created successfully.", product.ProductId);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while creating the product {ProductId}.", product.ProductId);
+                    ModelState.AddModelError("", "Unable to create product. Please try again later.");
+                }
             }
+
+            LogModelStateErrors();
             ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryId", product.CategoryId);
             ViewData["SupplierId"] = new SelectList(_context.Suppliers, "SupplierId", "SupplierId", product.SupplierId);
             return View(product);
@@ -99,8 +135,7 @@ namespace IndividualNorthwindEshop.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Employee,Manager")]
-        public async Task<IActionResult> Edit(int id, [Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued")] Product product)
+        public async Task<IActionResult> Edit(int id, [Bind("ProductId,ProductName,SupplierId,CategoryId,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued,Timestamp")] Product product, IFormFile photo)
         {
             if (id != product.ProductId)
             {
@@ -109,6 +144,16 @@ namespace IndividualNorthwindEshop.Controllers
 
             if (ModelState.IsValid)
             {
+                // Handle photo upload if a new photo is provided
+                if (photo != null && photo.Length > 0)
+                {
+                    using (var stream = new MemoryStream())
+                    {
+                        await photo.CopyToAsync(stream);
+                        product.Photo = stream.ToArray();
+                    }
+                }
+
                 try
                 {
                     _context.Update(product);
@@ -122,16 +167,35 @@ namespace IndividualNorthwindEshop.Controllers
                     }
                     else
                     {
-                        throw;
+                        // Log concurrency issues
+                        _logger.LogError("Concurrency error updating product {ProductId}", product.ProductId);
+                        ModelState.AddModelError(string.Empty, "The record you attempted to edit was modified by another user after you got the original value. The edit operation was aborted.");
+                        return View(product);
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryId", product.CategoryId);
-            ViewData["SupplierId"] = new SelectList(_context.Suppliers, "SupplierId", "SupplierId", product.SupplierId);
+            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
+            ViewData["SupplierId"] = new SelectList(_context.Suppliers, "SupplierId", "CompanyName", product.SupplierId);
             return View(product);
         }
 
+       
+
+        private void LogModelStateErrors()
+        {
+            foreach (var key in ModelState.Keys)
+            {
+                var state = ModelState[key];
+                if (state.Errors.Count > 0)
+                {
+                    foreach (var error in state.Errors)
+                    {
+                        _logger.LogWarning("ModelState error for {Key}: {ErrorMessage}", key, error.ErrorMessage);
+                    }
+                }
+            }
+        }
         // GET: Products/Delete/5
         [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> Delete(int? id)
@@ -159,15 +223,30 @@ namespace IndividualNorthwindEshop.Controllers
         [Authorize(Roles = "Employee,Manager")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product != null)
+            try
             {
-                _context.Products.Remove(product);
+                var product = await _context.Products.FindAsync(id);
+                if (product != null)
+                {
+                    _context.Products.Remove(product);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Product {ProductId} deleted successfully.", id);
+                }
+                else
+                {
+                    _logger.LogWarning("Product with id {Id} not found for deletion.", id);
+                    return NotFound();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting the product {ProductId}.", id);
+                ModelState.AddModelError("", "Unable to delete product. Please try again later.");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
+
 
         private bool ProductExists(int id)
         {

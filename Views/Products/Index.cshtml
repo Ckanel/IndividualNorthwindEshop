@@ -1,4 +1,4 @@
-﻿ @model IEnumerable<CommonData.Models.Product>
+﻿@model IEnumerable<CommonData.Models.Product>
 
 @{
     ViewData["Title"] = "Products";
@@ -17,43 +17,8 @@
 <div class="row">
     @foreach (var item in Model)
     {
-        if(!item.Discontinued){
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <img src="@Url.Action("GetProductPhoto", "Products", new { id = item.ProductId })" alt="@item.ProductName" class="card-img-top">
-                <div class="card-body">
-                    <h5 class="card-title">@item.ProductName</h5>
-                    <p class="card-text">Price: @string.Format("{0:C2}", item.UnitPrice)</p>
-                    <p class="card-text">Category: @item.Category.CategoryName</p>
-                   @if(item.UnitsInStock < 3)
-                    {
-                        <p class="card-text text-danger">Units in stock: @item.UnitsInStock</p>
-                    }
-                    else if(item.UnitsInStock ==0)
-                    {
-                        <p class="card-text text-danger">Out of stock</p>
-                    }
-                    <div class="d-flex justify-content-between">
-                        @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
-                        {
-                            <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-warning">Edit</a>
-                            <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
-                            <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
-                        }else
-                        {
-                        <form method="post" action="@Url.Action("AddToCart", "Cart")">
-                            <input type="hidden" name="productId" value="@item.ProductId" />
-                            <button type="submit" class="btn btn-primary">Add to Cart</button>
-                        </form>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-        }else
+        if (!item.Discontinued)
         {
-            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
-            {
             <div class="col-md-4 mb-4">
                 <div class="card">
                     <img src="@Url.Action("GetProductPhoto", "Products", new { id = item.ProductId })" alt="@item.ProductName" class="card-img-top">
@@ -61,6 +26,48 @@
                         <h5 class="card-title">@item.ProductName</h5>
                         <p class="card-text">Price: @string.Format("{0:C2}", item.UnitPrice)</p>
                         <p class="card-text">Category: @item.Category.CategoryName</p>
+                        @if (item.UnitsInStock < 3)
+                        {
+                            <p class="card-text text-danger">Units in stock: @item.UnitsInStock</p>
+                        }
+                        else if (item.UnitsInStock == 0)
+                        {
+                            <p class="card-text text-danger">Out of stock</p>
+                        }
+                        else
+                        {
+                            <p class="card-text">Units in stock: @item.UnitsInStock</p>
+                        }
+                        <div class="d-flex justify-content-between">
+                            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+                            {
+                                <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-warning">Edit</a>
+                                <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
+                                <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
+                            }
+                            else
+                            {
+                                <form method="post" action="@Url.Action("AddToCart", "Cart")">
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <img src="@Url.Action("GetProductPhoto", "Products", new { id = item.ProductId })" alt="@item.ProductName" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">@item.ProductName</h5>
+                            <p class="card-text">Price: @string.Format("{0:C2}", item.UnitPrice)</p>
+                            <p class="card-text">Category: @item.Category.CategoryName</p>
                             @if (item.UnitsInStock < 3)
                             {
                                 <p class="card-text text-danger">Units in stock: @item.UnitsInStock</p>
@@ -73,19 +80,19 @@
                             {
                                 <p class="card-text">Units in stock: @item.UnitsInStock</p>
                             }
-                            @if(item.Discontinued)
+                            @if (item.Discontinued)
                             {
                                 <p class="card-text text-danger">Discontinued</p>
                             }
-                        <div class="d-flex justify-content-between">
+                            <div class="d-flex justify-content-between">
                                 <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-sm btn-warning">Edit</a>
                                 <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
                                 <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
         }
     }
 </div>

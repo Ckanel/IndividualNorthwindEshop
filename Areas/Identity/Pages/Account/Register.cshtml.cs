@@ -297,74 +297,7 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
 
 
 
-    // create a manager with this methos 
-    //public async Task<IActionResult> OnPostAsync(string returnUrl = null)
-    //{
-    //    returnUrl ??= Url.Content("~/");
-    //    ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-    //    if (ModelState.IsValid)
-    //    {
-    //        var user = CreateUser();
-
-    //        await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-    //        await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-
-    //        // Generate the next available EmployeeId
-
-
-    //        // Create a new employee record
-    //        var employee = new Employee
-    //        {
-    //            LastName = Input.LastName,
-    //            FirstName = Input.FirstName
-    //        };
-
-    //        // Add the new employee to the database
-    //        _context.Employees.Add(employee);
-    //        await _context.SaveChangesAsync();
-
-    //        // Associate the employee with the user
-    //        user.EmployeeId = employee.EmployeeId;
-
-    //        var result = await _userManager.CreateAsync(user, Input.Password);
-
-    //        if (result.Succeeded)
-    //        {
-    //            _logger.LogInformation("User created a new account with password.");
-    //            await _userManager.AddToRoleAsync(user, "Manager");
-
-    //            var userId = await _userManager.GetUserIdAsync(user);
-    //            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-    //            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-    //            var callbackUrl = Url.Page(
-    //                "/Account/ConfirmEmail",
-    //                pageHandler: null,
-    //                values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-    //                protocol: Request.Scheme);
-
-    //            await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-    //                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-    //            if (_userManager.Options.SignIn.RequireConfirmedAccount)
-    //            {
-    //                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-    //            }
-    //            else
-    //            {
-    //                await _signInManager.SignInAsync(user, isPersistent: false);
-    //                TempData["SuccessMessage"] = "Registration successful. You are now logged in.";
-    //                return LocalRedirect(returnUrl ?? Url.Content("~/"));
-    //            }
-    //        }
-    //        foreach (var error in result.Errors)
-    //        {
-    //            ModelState.AddModelError(string.Empty, error.Description);
-    //        }
-    //    }
-
-    //    // If we got this far, something failed, redisplay form
-    //    return Page();
-    //}
+    
 
 
 

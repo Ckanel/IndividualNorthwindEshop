@@ -1,37 +1,54 @@
 ﻿@model CommonData.Models.Order
 
-<h2>Order Confirmation</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mx-auto p-5">
+        <h2 class="text-2xl font-bold mb-5 text-center">Order Confirmation</h2>
+        <p class="text-center text-green-500">
+            Thank you for your order!
+        </p>
 
-<p>Thank you for your order!</p>
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Order Details</h3>
+            <p><strong>Order ID:</strong> @Model.OrderId</p>
+            <p><strong>Customer ID:</strong> @Model.CustomerId</p>
+            <p><strong>Ship Name:</strong> @Model.ShipName</p>
+            <p><strong>Ship Address:</strong> @Model.ShipAddress</p>
+            <p><strong>Ship City:</strong> @Model.ShipCity</p>
+            <p><strong>Ship Country:</strong> @Model.ShipCountry</p>
+            <p><strong>Ship Postal Code:</strong> @Model.ShipPostalCode</p>
+        </div>
 
-<h3>Order Details</h3>
-<p>Order ID: @Model.OrderId</p>
-<p>Customer ID: @Model.CustomerId</p>
-<p>Ship Name: @Model.ShipName</p>
-<p>Ship Address: @Model.ShipAddress</p>
-<p>Ship City: @Model.ShipCity</p>
-<p>Ship Country: @Model.ShipCountry</p>
-<p>Ship Postal Code: @Model.ShipPostalCode</p>
-<!-- Display other relevant order details -->
-
-<h3>Order Items</h3>
-<table>
-    <thead>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th>Price</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.OrderDetails)
-        {
-            <tr>
-                <td>@item.Product.ProductName</td>
-                <td>@($"{item.Quantity:C2}")</td>
-                <td>@($"{item.Product.UnitPrice:C2}")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Order Items</h3>
+            <table class="table-auto w-full">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 bg-gray-200 text-left">Product</th>
+                        <th class="px-4 py-2 bg-gray-200 text-left">Quantity</th>
+                        <th class="px-4 py-2 bg-gray-200 text-left">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderDetails)
+                    {
+                        <tr>
+                            <td class="border px-4 py-2">@item.Product.ProductName</td>
+                            <td class="border px-4 py-2">@item.Quantity</td>
+                            <td class="border px-4 py-2">@($"{item.Product.UnitPrice:C2}")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
 
