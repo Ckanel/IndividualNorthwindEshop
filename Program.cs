@@ -47,14 +47,14 @@ namespace IndividualNorthwindEshop
                 builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection("ConnectionStrings"));
 
                 // Register ETL services
-                //builder.Services.AddScoped<OrderRepository>();
-                //builder.Services.AddScoped<OrderTransform>();
-                //builder.Services.AddScoped<ETLProcess>();
-                //string connectionString = builder.Configuration.GetConnectionString("ETLDatabase");
-                //builder.Services.AddSingleton(new ETLDataExportService(connectionString));
-                //builder.Services.AddScoped(sp => new LoadProcess(connectionString));
+                builder.Services.AddScoped<OrderRepository>();
+                builder.Services.AddScoped<OrderTransform>();
+                builder.Services.AddScoped<ETLProcess>();
+                string connectionString = builder.Configuration.GetConnectionString("ETLDatabase");
+                builder.Services.AddSingleton(new ETLDataExportService(connectionString));
+                builder.Services.AddScoped(sp => new LoadProcess(connectionString));
                 builder.Services.AddTransient<EmailService>();
-                //builder.Services.AddHostedService<ETLBackgroundService>();
+                builder.Services.AddHostedService<ETLBackgroundService>();
                 var app = builder.Build();
 
                 using (var scope = app.Services.CreateScope())

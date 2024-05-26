@@ -127,7 +127,7 @@ namespace IndividualNorthwindEshop.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Employee,Manager")]
-        public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description,Picture")] Category category)
+        public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
         {
             if (id != category.CategoryId)
             {
@@ -138,6 +138,14 @@ namespace IndividualNorthwindEshop.Controllers
             {
                 try
                 {
+                    if (picture != null && picture.Length > 0)
+                    {
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            await picture.CopyToAsync(memoryStream);
+                            category.Picture = memoryStream.ToArray();
+                        }
+                    }
                     _context.Update(category);
                     await _context.SaveChangesAsync();
                 }

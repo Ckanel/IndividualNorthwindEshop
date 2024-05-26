@@ -31,7 +31,7 @@ public class EmailService
         request.AddParameter("to", toEmail);
         request.AddParameter("subject", subject);
         request.AddParameter("text", text);
-
+        
         try
         {
             var response = await client.ExecuteAsync(request);

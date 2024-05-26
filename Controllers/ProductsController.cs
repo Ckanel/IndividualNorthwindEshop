@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using CommonData.Data;
 using CommonData.Models;
 using Microsoft.AspNetCore.Authorization;
+using X.PagedList;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -24,12 +25,62 @@ namespace IndividualNorthwindEshop.Controllers
         }
         [AllowAnonymous]
         // GET: Products
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, decimal? minPrice, decimal? maxPrice, int? pageNumber)
         {
-            var masterContext = _context.Products.Include(p => p.Category).Include(p => p.Supplier);
-            return View(await masterContext.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["PriceSortParm"] = sortOrder == "Price" ? "price_desc" : "Price";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            var products = from p in _context.Products.Include(p => p.Category)
+                           select p;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                products = products.Where(p => p.ProductName.Contains(searchString));
+            }
+
+            if (minPrice.HasValue)
+            {
+                products = products.Where(p => p.UnitPrice >= minPrice.Value);
+            }
+
+            if (maxPrice.HasValue)
+            {
+                products = products.Where(p => p.UnitPrice <= maxPrice.Value);
+            }
+
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    products = products.OrderByDescending(p => p.ProductName);
+                    break;
+                case "Price":
+                    products = products.OrderBy(p => p.UnitPrice);
+                    break;
+                case "price_desc":
+                    products = products.OrderByDescending(p => p.UnitPrice);
+                    break;
+                default:
+                    products = products.OrderBy(p => p.ProductName);
+                    break;
+            }
+
+            int pageSize = 25;
+            return View(await products.ToPagedListAsync(pageNumber ?? 1, pageSize));
         }
-        public IActionResult GetProductPhoto(int id)
+    
+    public IActionResult GetProductPhoto(int id)
         {
             var product = _context.Products
                 .Where(p => p.ProductId == id)
