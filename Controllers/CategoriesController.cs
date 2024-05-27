@@ -16,10 +16,12 @@ namespace IndividualNorthwindEshop.Controllers
     {
         private readonly MasterContext _context;
         private readonly IOle78DecryptionService _decryptionService;
-        public CategoriesController(MasterContext context, IOle78DecryptionService decryptionService)
+        private readonly ILogger<CategoriesController> _logger;
+        public CategoriesController(MasterContext context, IOle78DecryptionService decryptionService, ILogger<CategoriesController> logger)
         {
             _context = context;
             _decryptionService = decryptionService;
+            _logger = logger;
         }
 
         // GET: Categories
@@ -53,18 +55,17 @@ namespace IndividualNorthwindEshop.Controllers
             var employee = _context.Categories.FirstOrDefault(e => e.CategoryId == id);
             if (employee != null && employee.Picture != null)
             {
-                if (id >= 1 && id <= 9)
-                {
-                    byte[] decryptedPhoto = _decryptionService.DecryptData(employee.Picture);
-                    if (decryptedPhoto != null)
-                    {
-                        return File(decryptedPhoto, "image/bmp");
-                    }
-                }
-                else
-                {
+                //if (id >= 1 && id <= 9)
+                //{
+                //    byte[] decryptedPhoto = _decryptionService.DecryptData(employee.Picture);
+                //    if (decryptedPhoto != null)
+                //    {
+                //        return File(decryptedPhoto, "image/bmp");
+                //    }
+                //}
+                
                     return File(employee.Picture, "image/bmp");
-                }
+                
             }
             return NotFound();
         }
@@ -127,10 +128,12 @@ namespace IndividualNorthwindEshop.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Employee,Manager")]
-        public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
+        [HttpPost]
+      public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
         {
             if (id != category.CategoryId)
             {
+                _logger.LogWarning($"Edit attempt with mismatched id. Id: {id}, CategoryId: {category.CategoryId}");
                 return NotFound();
             }
 
@@ -140,19 +143,26 @@ namespace IndividualNorthwindEshop.Controllers
                 {
                     if (picture != null && picture.Length > 0)
                     {
+                        _logger.LogInformation($"Processing picture upload for category {category.CategoryId}");
                         using (var memoryStream = new MemoryStream())
                         {
                             await picture.CopyToAsync(memoryStream);
                             category.Picture = memoryStream.ToArray();
                         }
                     }
+
+                    _logger.LogInformation($"Updating category with id {category.CategoryId}");
                     _context.Update(category);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation($"Successfully updated category {category.CategoryId}");
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
+                    _logger.LogError(ex, $"Concurrency error updating category with id {category.CategoryId}");
+
                     if (!CategoryExists(category.CategoryId))
                     {
+                        _logger.LogWarning($"Category with id {category.CategoryId} does not exist.");
                         return NotFound();
                     }
                     else
@@ -162,8 +172,12 @@ namespace IndividualNorthwindEshop.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Model state is not valid.");
             return View(category);
         }
+
+
 
         // GET: Categories/Delete/5
         [Authorize(Roles = "Employee,Manager")]

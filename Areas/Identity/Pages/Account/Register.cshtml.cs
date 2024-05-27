@@ -155,13 +155,6 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                 ? GenerateCustomerId(Input.CompanyName)
                 : GenerateCustomerId("CUSTOMER");
 
-
-
-                // Generate a unique customer ID based on the user type
-
-
-
-
                 // Create a new customer record
 
 
@@ -211,7 +204,7 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                 await _userManager.AddToRoleAsync(user, "Customer");
                 await _userManager.AddClaimAsync(user, new Claim("CustomerId", customerId));
 
-                // Create a new cart and associate it with the customer
+                // Creates a new cart and associates it with the customer
                 var cart = new Cart
                 {
                     CustomerId = customerId
@@ -261,7 +254,7 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
 
         if (!string.IsNullOrEmpty(input))
         {
-            // Extract the first five uppercase letters from the input
+            // Extracts the first five uppercase letters from the input
             foreach (char c in input)
             {
                 if (char.IsUpper(c))

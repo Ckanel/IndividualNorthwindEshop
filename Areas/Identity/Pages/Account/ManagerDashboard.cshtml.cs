@@ -106,10 +106,10 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                         return Page();
                     }
                 }
-
+                // Just a placeholder to satisfy NOT NULL of 'FirstName' 
                 var tempEmployee = new Employee
                 {
-                    FirstName = "-", // Just a placeholder to satisfy NOT NULL constraints if 'FirstName' column is VARCHAR(1)
+                    FirstName = "-", 
                     LastName = "-",
                     Address = "-",
                     City = "-",
@@ -118,21 +118,21 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                     Country = "",
                     HomePhone = ""
                 };
-
+                // Adds Temp employee to generate ID
                 _context.Employees.Add(tempEmployee);
                 await _context.SaveChangesAsync();
                 Debug.WriteLine($"Temporary employee created with Id: {tempEmployee.EmployeeId}");
-
+                // Registers new user
                 var user = CreateUser();
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 user.EmployeeId = tempEmployee.EmployeeId;
-                user.CustomerId = null; // Ensure that CustomerId remains null
+                user.CustomerId = null; // Ensures that CustomerId remains null
 
                 Debug.WriteLine($"Attempting to create a new user with email {Input.Email} and temporary EmployeeId {user.EmployeeId}");
 
                 var result = await _userManager.CreateAsync(user, Input.Password);
-
+                //If new user is created, then assigns role and updates employee record
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password for {Email}.", Input.Email);

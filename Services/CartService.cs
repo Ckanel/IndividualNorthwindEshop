@@ -29,8 +29,8 @@ public class CartService
 
             
 
-// If no cart is found, create a new cart
-if (cart == null)
+            // If no cart is found, create a new cart
+        if (cart == null)
             {
                 var newCart = new Cart
                 {
@@ -51,7 +51,7 @@ if (cart == null)
         }
         else
         {
-            // User is not authenticated, retrieve the cart from the session
+            // User is not authenticated, retrieve the cart from the sessi
             var cartId = httpContext.Session.GetInt32("CartId");
 
             if (cartId.HasValue)
