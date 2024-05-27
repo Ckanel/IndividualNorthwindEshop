@@ -19,8 +19,8 @@ namespace IndividualNorthwindEshop.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            // Initialize and start the timer to run the ETL process immediately and then every hour
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+            // Initializes and starts the timer to run the ETL process immediately and then every 7 days after that
+            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(7));
             return Task.CompletedTask;
         }
 
@@ -36,7 +36,7 @@ namespace IndividualNorthwindEshop.Services
                 }
                 catch (Exception ex)
                 {
-                    // Log the exception
+                    
                     Console.WriteLine($"ETL process encountered an error: {ex.Message}");
                 }
             }

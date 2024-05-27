@@ -242,8 +242,7 @@ namespace IndividualNorthwindEshop.Controllers
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> HandleOrder(int id)
         {
-            bool comingFromUpdateOrCancel = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"] ||
-                                            TempData.ContainsKey("OperationCancelled") && (bool)TempData["OperationCancelled"];
+            bool comingFromUpdate = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"] ;
 
             // Clear the TempData right away after using it
             TempData.Remove("UpdateSuccess");
@@ -281,7 +280,7 @@ namespace IndividualNorthwindEshop.Controllers
                 return RedirectToAction("PendingOrders");
             }
 
-            if (order.Status != OrderStatus.BeingHandled && !comingFromUpdateOrCancel)
+            if (order.Status != OrderStatus.BeingHandled && !comingFromUpdate)
             {
                 order.EmployeeId = currentEmployeeId;
                 order.Status = OrderStatus.BeingHandled;
@@ -297,6 +296,7 @@ namespace IndividualNorthwindEshop.Controllers
                     {
                         // Set ReservedStock to the quantity
                         // since this is the first time we are handling the order.
+                       
                         product.ReservedStock = orderDetail.Quantity;
                     }
                 }
@@ -495,7 +495,7 @@ namespace IndividualNorthwindEshop.Controllers
             }
 
 
-          
+
             var currentUser = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
             _logger.LogInformation("EmployeeId: {EmployeeId}", currentUser?.Value);
             if (currentUser == null)
@@ -533,7 +533,7 @@ namespace IndividualNorthwindEshop.Controllers
                 UpdateOrderDetails(order, updatedOrderDetails);
                 await _context.SaveChangesAsync();
 
-               
+
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Order quantities updated for order with ID: {OrderId}", order.OrderId);
@@ -554,6 +554,7 @@ namespace IndividualNorthwindEshop.Controllers
                 return RedirectToAction("HandleOrder", new { id = order.OrderId });
             }
         }
+
 
 
         private void UpdateOrderDetails(Order order, List<UpdatedOrderDetailViewModel> updatedOrderDetails)
@@ -783,12 +784,13 @@ namespace IndividualNorthwindEshop.Controllers
             order.Status = OrderStatus.Pending;
 
             order.HandlingStartTime = null;
-           
+
             await _context.SaveChangesAsync();
 
             // Redirect to the pending orders page or any other appropriate page
             return RedirectToAction("PendingOrders", "Orders");
         }
+
 
 
 

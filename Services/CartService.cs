@@ -51,7 +51,7 @@ public class CartService
         }
         else
         {
-            // User is not authenticated, retrieve the cart from the sessi
+            // User is not authenticated, retrieve the cart from the session
             var cartId = httpContext.Session.GetInt32("CartId");
 
             if (cartId.HasValue)
