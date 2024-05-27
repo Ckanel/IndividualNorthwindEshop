@@ -81,7 +81,7 @@
 
     <div>
         <form method="post" asp-action="CloseOrder" asp-route-id="@Model.Order.OrderId" class="d-inline mr-2">
-            <button type="submit" class="btn btn-primary">Complete Order</button>
+            <button type="submit" class="btn btn-primary" onclick="return confirmOrderCompletion();">Complete Order</button>
         </form>
 
         <form id="cancelOrderForm_@Model.Order.OrderId" method="post" asp-action="CancelOrder" asp-route-id="@Model.Order.OrderId" class="d-inline mr-2">
@@ -109,5 +109,14 @@ else
             document.getElementById("cancelOrderForm_" + orderId).submit();
         }
     }
+    function confirmOrderCompletion() {
+        if (confirm("Are you sure you want to complete this order?")) {
+            alert("Order @Model.Order.OrderId has been confirmed successfully!");
+            return true;
+        }
+        return false;
+    }
+
+
 </script>
 

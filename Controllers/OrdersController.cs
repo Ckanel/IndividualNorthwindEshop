@@ -401,7 +401,7 @@ namespace IndividualNorthwindEshop.Controllers
 
                         LogAndNotifyOrderCompletion(order);
 
-                        return RedirectToAction("ClosedOrder", new { id = order.OrderId });
+                        return RedirectToAction("PendingOrders");
                     }
                     else
                     {
@@ -440,7 +440,7 @@ namespace IndividualNorthwindEshop.Controllers
 
                         LogAndNotifyOrderCompletion(order);
 
-                        return RedirectToAction("ClosedOrder", new { id = order.OrderId });
+                        return RedirectToAction("PendingOrders");
                     }
                     catch (DbUpdateConcurrencyException)
                     {
@@ -467,20 +467,6 @@ namespace IndividualNorthwindEshop.Controllers
 
 
 
-        [HttpGet]
-        [Authorize(Roles = "Manager,Employee")]
-        public async Task<IActionResult> ClosedOrder(int id)
-        {
-            // Retrieve the closed order details based on the provided ID
-            var order = await _context.Orders.FindAsync(id);
-
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            return View(order);
-        }
 
 
 
