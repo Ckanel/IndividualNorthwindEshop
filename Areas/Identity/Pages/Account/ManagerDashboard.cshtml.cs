@@ -135,6 +135,8 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                 //If new user is created, then assigns role and updates employee record
                 if (result.Succeeded)
                 {
+                    user.EmailConfirmed = true; 
+                    await _userManager.UpdateAsync(user);
                     _logger.LogInformation("User created a new account with password for {Email}.", Input.Email);
                     Debug.WriteLine($"User created a new account with password for {Input.Email}");
 
