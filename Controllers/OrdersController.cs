@@ -395,6 +395,7 @@ namespace IndividualNorthwindEshop.Controllers
 
                         order.Status = OrderStatus.Completed;
                         order.HandlingStartTime = null;
+                        order.ShippedDate = DateTime.Now;
                         _context.Entry(order).State = EntityState.Modified;
                         await _context.SaveChangesAsync();
                         await transaction.CommitAsync();

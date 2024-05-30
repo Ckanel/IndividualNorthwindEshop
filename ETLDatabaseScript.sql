@@ -13,19 +13,27 @@ CREATE TABLE DiscountEffectiveness (
 );
 
 -- Creating the EmployeePerformance table
-CREATE TABLE EmployeePerformance (
-    EmployeeId INT PRIMARY KEY,
-    OrdersHandled INT NOT NULL,
-    AverageHandlingTime FLOAT NOT NULL
-);
+
+    CREATE TABLE EmployeePerformance (
+        EmployeeId INT PRIMARY KEY,
+        OrdersHandled INT NOT NULL,
+        AverageHandlingTime FLOAT NOT NULL,
+        EmployeeFirstName NVARCHAR(50) NOT NULL DEFAULT 'Unhandled',
+        EmployeeLastName NVARCHAR(50) NOT NULL DEFAULT 'Orders'
+    );
+    
 
 -- Creating the ProductPerformance table
+
 CREATE TABLE ProductPerformance (
     ProductId INT PRIMARY KEY,
+    ProductName NVARCHAR(255) NOT NULL,
     TotalQuantitySold INT NOT NULL,
     TotalAmountSold DECIMAL(18, 2) NOT NULL,
     TotalRevenue DECIMAL(18, 2) NOT NULL
 );
+
+
 
 -- Creating the SalesData table
 CREATE TABLE SalesData (
