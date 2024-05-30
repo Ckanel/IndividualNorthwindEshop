@@ -195,7 +195,7 @@ namespace IndividualNorthwindEshop.Controllers
 
             if (ModelState.IsValid)
             {
-                // Handle photo upload if a new photo is provided
+                
                 if (photo != null && photo.Length > 0)
                 {
                     using (var stream = new MemoryStream())
@@ -203,6 +203,14 @@ namespace IndividualNorthwindEshop.Controllers
                         await photo.CopyToAsync(stream);
                         product.Photo = stream.ToArray();
                     }
+                }
+                else
+                {
+                    
+                    var existingProduct = await _context.Products.FindAsync(product.ProductId);
+
+                    
+                    product.Photo = existingProduct.Photo;
                 }
 
                 try
@@ -231,7 +239,11 @@ namespace IndividualNorthwindEshop.Controllers
             return View(product);
         }
 
-       
+
+
+
+
+
 
         private void LogModelStateErrors()
         {
