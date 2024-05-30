@@ -10,9 +10,7 @@
     <h2 class="text-center my-4">Customers</h2>
     @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
     {
-        <p>
-            <a asp-action="Create" class="btn btn-primary">Create New</a>
-        </p>
+       
 
         <form method="get" asp-action="Index">
             <div class="form-group row">

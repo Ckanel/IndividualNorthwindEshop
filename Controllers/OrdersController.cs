@@ -11,6 +11,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using static CommonData.Models.Order;
 using IndividualNorthwindEshop.Services;
+
 //using ETL.Extract;
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -239,10 +240,11 @@ namespace IndividualNorthwindEshop.Controllers
 
 
 
+    
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> HandleOrder(int id)
         {
-            bool comingFromUpdate = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"] ;
+            bool comingFromUpdate = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"];
 
             // Clear the TempData right away after using it
             TempData.Remove("UpdateSuccess");
@@ -296,7 +298,7 @@ namespace IndividualNorthwindEshop.Controllers
                     {
                         // Set ReservedStock to the quantity
                         // since this is the first time we are handling the order.
-                       
+
                         product.ReservedStock = orderDetail.Quantity;
                     }
                 }
@@ -312,7 +314,14 @@ namespace IndividualNorthwindEshop.Controllers
                     return RedirectToAction("PendingOrders");
                 }
             }
-            
+
+            var shippers = await _context.Shippers
+        .Select(s => new CustomSelectListItem
+        {
+            Value = s.ShipperId.ToString(),
+            Text = s.CompanyName
+        })
+        .ToListAsync();
 
             var viewModel = new HandleOrderViewModel
             {
@@ -326,17 +335,27 @@ namespace IndividualNorthwindEshop.Controllers
                     CategoryName = od.Product?.Category?.CategoryName ?? "Unknown",
                     UnitsInStock = od.Product?.UnitsInStock ?? 0,
                     Discontinued = od.Product?.Discontinued ?? false
-                }).ToList()
+                }).ToList(),
+                Shippers = shippers
             };
 
             return View(viewModel);
         }
 
-        
+
+
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
-        public async Task<IActionResult> CloseOrder(int id)
+        public async Task<IActionResult> CloseOrder(int id, [FromForm] int selectedShipperId)
         {
+            _logger.LogInformation("Selected Shipper ID: {SelectedShipperId}", selectedShipperId);
+
+            if (selectedShipperId == 0)
+            {
+                TempData["ErrorMessage"] = "Please select a valid shipper.";
+                return RedirectToAction("HandleOrder", new { id });
+            }
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 Order order = null;
@@ -356,6 +375,14 @@ namespace IndividualNorthwindEshop.Controllers
 
                     _context.Entry(order).State = EntityState.Detached;
                     _context.Orders.Attach(order);
+
+                    // Verify if selectedShipperId is valid
+                    var shipperExists = await _context.Shippers.AnyAsync(s => s.ShipperId == selectedShipperId);
+                    if (!shipperExists)
+                    {
+                        TempData["ErrorMessage"] = "The selected shipper does not exist.";
+                        return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                    }
 
                     var productIds = order.OrderDetails.Select(od => od.ProductId).ToHashSet();
                     var currentProducts = await _context.Products
@@ -392,16 +419,17 @@ namespace IndividualNorthwindEshop.Controllers
                             }
                         }
 
-
                         order.Status = OrderStatus.Completed;
                         order.HandlingStartTime = null;
                         order.ShippedDate = DateTime.Now;
+                        order.ShipVia = selectedShipperId;
                         _context.Entry(order).State = EntityState.Modified;
                         await _context.SaveChangesAsync();
                         await transaction.CommitAsync();
 
                         LogAndNotifyOrderCompletion(order);
 
+                        TempData["SuccessMessage"] = "Order has been successfully completed.";
                         return RedirectToAction("PendingOrders");
                     }
                     else
@@ -425,12 +453,10 @@ namespace IndividualNorthwindEshop.Controllers
                             TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
                             return RedirectToAction("HandleOrder", new { id = order.OrderId });
                         }
-                                            }
+                    }
 
                     // Retry the update operation
-
                     order.Status = OrderStatus.Completed;
-                   
                     order.HandlingStartTime = null;
 
                     _context.Entry(order).State = EntityState.Modified;
@@ -441,6 +467,7 @@ namespace IndividualNorthwindEshop.Controllers
 
                         LogAndNotifyOrderCompletion(order);
 
+                        TempData["SuccessMessage"] = "Order has been successfully completed.";
                         return RedirectToAction("PendingOrders");
                     }
                     catch (DbUpdateConcurrencyException)
@@ -459,6 +486,153 @@ namespace IndividualNorthwindEshop.Controllers
                 }
             }
         }
+
+
+        //[HttpPost]
+        //[Authorize(Roles = "Manager,Employee")]
+        //public async Task<IActionResult> CloseOrder(int id, [FromForm] int selectedShipperId)
+        //{
+        //    _logger.LogInformation("Selected Shipper ID: {SelectedShipperId}", selectedShipperId);
+
+        //    if (selectedShipperId == 0)
+        //    {
+        //        TempData["ErrorMessage"] = "Please select a valid shipper.";
+        //        return RedirectToAction("HandleOrder", new { id });
+        //    }
+
+        //    using (var transaction = await _context.Database.BeginTransactionAsync())
+        //    {
+        //        Order order = null;
+
+        //        try
+        //        {
+        //            order = await _context.Orders
+        //                .Include(o => o.Customer)
+        //                .Include(o => o.OrderDetails)
+        //                    .ThenInclude(od => od.Product)
+        //                .FirstOrDefaultAsync(o => o.OrderId == id);
+
+        //            if (order == null)
+        //            {
+        //                return NotFound();
+        //            }
+
+        //            _context.Entry(order).State = EntityState.Detached;
+        //            _context.Orders.Attach(order);
+
+        //            // Verify if selectedShipperId is valid
+        //            var shipperExists = await _context.Shippers.AnyAsync(s => s.ShipperId == selectedShipperId);
+        //            if (!shipperExists)
+        //            {
+        //                TempData["ErrorMessage"] = "The selected shipper does not exist.";
+        //                return RedirectToAction("HandleOrder", new { id = order.OrderId });
+        //            }
+
+        //            var productIds = order.OrderDetails.Select(od => od.ProductId).ToHashSet();
+        //            var currentProducts = await _context.Products
+        //                .Where(p => productIds.Contains(p.ProductId))
+        //                .ToListAsync();
+
+        //            bool stockSufficient = true;
+        //            foreach (var orderDetail in order.OrderDetails)
+        //            {
+        //                var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
+        //                if (product == null)
+        //                {
+        //                    stockSufficient = false;
+        //                    break;
+        //                }
+
+        //                int availableStock = (product.UnitsInStock ?? 0) - product.ReservedStock;
+        //                if (orderDetail.Quantity > availableStock)
+        //                {
+        //                    stockSufficient = false;
+        //                    break;
+        //                }
+        //            }
+
+        //            if (stockSufficient)
+        //            {
+        //                foreach (var orderDetail in order.OrderDetails)
+        //                {
+        //                    var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
+        //                    if (product != null)
+        //                    {
+        //                        product.UnitsInStock -= orderDetail.Quantity;
+        //                        product.ReservedStock -= orderDetail.Quantity;
+        //                    }
+        //                }
+
+        //                order.Status = OrderStatus.Completed;
+        //                order.HandlingStartTime = null;
+        //                order.ShippedDate = DateTime.Now;
+        //                order.ShipVia = selectedShipperId;
+        //                _context.Entry(order).State = EntityState.Modified;
+        //                await _context.SaveChangesAsync();
+        //                await transaction.CommitAsync();
+
+        //                LogAndNotifyOrderCompletion(order);
+
+        //                return RedirectToAction("PendingOrders");
+        //            }
+        //            else
+        //            {
+        //                await transaction.RollbackAsync();
+
+        //                TempData["ErrorMessage"] = "Insufficient stock to complete the order.";
+        //                return RedirectToAction("HandleOrder", new { id = order.OrderId });
+        //            }
+        //        }
+        //        catch (DbUpdateConcurrencyException ex)
+        //        {
+        //            _logger.LogError(ex, "A concurrency conflict occurred while updating the order with ID: {OrderId}", id);
+
+        //            if (order != null)
+        //            {
+        //                _context.Entry(order).Reload();
+
+        //                if (order.Status != OrderStatus.BeingHandled)
+        //                {
+        //                    TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
+        //                    return RedirectToAction("HandleOrder", new { id = order.OrderId });
+        //                }
+        //            }
+
+        //            // Retry the update operation
+        //            order.Status = OrderStatus.Completed;
+        //            order.HandlingStartTime = null;
+        //            order.ShippedDate = DateTime.Now;
+        //            order.ShipVia = selectedShipperId;
+
+        //            _context.Entry(order).State = EntityState.Modified;
+        //            try
+        //            {
+        //                await _context.SaveChangesAsync();
+        //                await transaction.CommitAsync();
+
+        //                LogAndNotifyOrderCompletion(order);
+
+        //                return RedirectToAction("PendingOrders");
+        //            }
+        //            catch (DbUpdateConcurrencyException)
+        //            {
+        //                await transaction.RollbackAsync();
+        //                TempData["ErrorMessage"] = "Unable to complete the order due to a concurrency conflict. Please try again.";
+        //                return RedirectToAction("HandleOrder", new { id = order.OrderId });
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "An error occurred while closing the order with ID: {OrderId}", id);
+        //            TempData["ErrorMessage"] = "An error occurred while closing the order. Please try again.";
+        //            return RedirectToAction("HandleOrder", new { id = order?.OrderId ?? 0 });
+        //        }
+        //    }
+        //}
+
+
+
 
         private void LogAndNotifyOrderCompletion(Order order)
         {

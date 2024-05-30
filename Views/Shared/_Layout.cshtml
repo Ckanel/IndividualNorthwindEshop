@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - IndividualNorthwindEshop</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/IndividualNorthwindEshop.styles.css" asp-append-version="true" />
 </head>
@@ -28,9 +29,7 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Products" asp-action="Index">Products</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">Graphs</a>
-                        </li>
+                       
                         
                         @using Microsoft.AspNetCore.Identity
                         @inject SignInManager<CommonData.Models.User> SignInManager
@@ -76,6 +75,9 @@
                                   
                                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/ManagerDashboard" >Manager Dashboard</a>
                                 </li>
+                                 <li class="nav-item">
+                                 <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">Graphs</a>
+                                 </li>
                             }
                         }
                     </ul>
@@ -127,6 +129,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
