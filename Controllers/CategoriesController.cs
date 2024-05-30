@@ -55,14 +55,7 @@ namespace IndividualNorthwindEshop.Controllers
             var employee = _context.Categories.FirstOrDefault(e => e.CategoryId == id);
             if (employee != null && employee.Picture != null)
             {
-                //if (id >= 1 && id <= 9)
-                //{
-                //    byte[] decryptedPhoto = _decryptionService.DecryptData(employee.Picture);
-                //    if (decryptedPhoto != null)
-                //    {
-                //        return File(decryptedPhoto, "image/bmp");
-                //    }
-                //}
+               
                 
                     return File(employee.Picture, "image/bmp");
                 
@@ -124,17 +117,25 @@ namespace IndividualNorthwindEshop.Controllers
 
         // POST: Categories/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Employee,Manager")]
-        [HttpPost]
-      public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
+        public async Task<IActionResult> Edit(int id, [Bind("CategoryId,CategoryName,Description")] Category category, IFormFile picture)
         {
             if (id != category.CategoryId)
             {
                 _logger.LogWarning($"Edit attempt with mismatched id. Id: {id}, CategoryId: {category.CategoryId}");
                 return NotFound();
+            }
+
+            // Log the initial ModelState
+            LogModelState();
+
+            // Remove the picture key from ModelState if no new picture is uploaded
+            if (picture == null || picture.Length == 0)
+            {
+                _logger.LogInformation("No new picture uploaded, keeping the existing picture.");
+                ModelState.Remove(nameof(category.Picture));
             }
 
             if (ModelState.IsValid)
@@ -148,6 +149,18 @@ namespace IndividualNorthwindEshop.Controllers
                         {
                             await picture.CopyToAsync(memoryStream);
                             category.Picture = memoryStream.ToArray();
+                        }
+                    }
+                    else
+                    {
+                        // Preserve the existing picture if no new file is uploaded
+                        var existingCategory = await _context.Categories
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId);
+
+                        if (existingCategory != null)
+                        {
+                            category.Picture = existingCategory.Picture;
                         }
                     }
 
@@ -174,8 +187,40 @@ namespace IndividualNorthwindEshop.Controllers
             }
 
             _logger.LogWarning("Model state is not valid.");
+            LogModelState(); // Log the ModelState errors again after attempting to update the category
             return View(category);
         }
+
+        private void LogModelState()
+        {
+            foreach (var state in ModelState)
+            {
+                var key = state.Key;
+                var errors = state.Value.Errors;
+                if (errors.Any())
+                {
+                    foreach (var error in errors)
+                    {
+                        _logger.LogError("ModelState Error - Key: {Key}, Error: {ErrorMessage}", key, error.ErrorMessage);
+                        if (error.Exception != null)
+                        {
+                            _logger.LogError(error.Exception, "Exception for ModelState error with Key: {Key}", key);
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("ModelState Key: {Key} is valid.", key);
+                }
+            }
+        }
+
+      
+
+
+
+
+
 
 
 

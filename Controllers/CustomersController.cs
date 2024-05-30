@@ -225,11 +225,32 @@ namespace IndividualNorthwindEshop.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
-            var customer = await _context.Customers.FindAsync(id);
-            if (customer != null)
+            var customer = await _context.Customers
+                .Include(c => c.Orders) // Include related orders
+                .FirstOrDefaultAsync(c => c.CustomerId == id);
+
+            if (customer == null)
             {
-                _context.Customers.Remove(customer);
+                return NotFound();
             }
+
+            // Fetch related Carts
+            var carts = await _context.Carts.Where(c => c.CustomerId == id).ToListAsync();
+
+            // Remove related Carts
+            if (carts.Any())
+            {
+                _context.Carts.RemoveRange(carts);
+            }
+
+            // Remove related Orders
+            if (customer.Orders.Any())
+            {
+                _context.Orders.RemoveRange(customer.Orders);
+            }
+
+            // Remove Customer
+            _context.Customers.Remove(customer);
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));

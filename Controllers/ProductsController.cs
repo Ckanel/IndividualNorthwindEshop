@@ -190,58 +190,98 @@ namespace IndividualNorthwindEshop.Controllers
         {
             if (id != product.ProductId)
             {
+                _logger.LogWarning($"Edit attempt with mismatched id. Id: {id}, ProductId: {product.ProductId}");
                 return NotFound();
+            }
+
+            // Log the initial ModelState
+            LogModelState();
+
+            if (photo == null || photo.Length == 0)
+            {
+                _logger.LogInformation("No new photo uploaded, keeping the existing photo.");
+                ModelState.Remove(nameof(product.Photo)); // Removes "Photo" from ModelState validation
             }
 
             if (ModelState.IsValid)
             {
-                
-                if (photo != null && photo.Length > 0)
-                {
-                    using (var stream = new MemoryStream())
-                    {
-                        await photo.CopyToAsync(stream);
-                        product.Photo = stream.ToArray();
-                    }
-                }
-                else
-                {
-                    
-                    var existingProduct = await _context.Products.FindAsync(product.ProductId);
-
-                    
-                    product.Photo = existingProduct.Photo;
-                }
-
                 try
                 {
+                    if (photo != null && photo.Length > 0)
+                    {
+                        _logger.LogInformation($"Processing photo upload for product {product.ProductId}");
+                        using (var stream = new MemoryStream())
+                        {
+                            await photo.CopyToAsync(stream);
+                            product.Photo = stream.ToArray();
+                        }
+                    }
+                    else
+                    {
+                        // Preserve the existing photo if no new file is uploaded
+                        var existingProduct = await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.ProductId == product.ProductId);
+
+                        if (existingProduct != null)
+                        {
+                            product.Photo = existingProduct.Photo;
+                        }
+                    }
+
+                    _logger.LogInformation($"Updating product with id {product.ProductId}");
                     _context.Update(product);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation($"Successfully updated product {product.ProductId}");
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
                     if (!ProductExists(product.ProductId))
                     {
+                        _logger.LogWarning($"Product with id {product.ProductId} does not exist.");
                         return NotFound();
                     }
                     else
                     {
-                        // Log concurrency issues
-                        _logger.LogError("Concurrency error updating product {ProductId}", product.ProductId);
+                        _logger.LogError(ex, $"Concurrency error updating product with id {product.ProductId}");
                         ModelState.AddModelError(string.Empty, "The record you attempted to edit was modified by another user after you got the original value. The edit operation was aborted.");
                         return View(product);
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Model state is not valid.");
+            LogModelState(); // Log the ModelState errors again after attempting to update the product
+
             ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "CategoryName", product.CategoryId);
             ViewData["SupplierId"] = new SelectList(_context.Suppliers, "SupplierId", "CompanyName", product.SupplierId);
             return View(product);
         }
 
+        private void LogModelState()
+        {
+            foreach (var state in ModelState)
+            {
+                var key = state.Key;
+                var errors = state.Value.Errors;
+                if (errors.Any())
+                {
+                    foreach (var error in errors)
+                    {
+                        _logger.LogError("ModelState Error - Key: {Key}, Error: {ErrorMessage}", key, error.ErrorMessage);
+                        if (error.Exception != null)
+                        {
+                            _logger.LogError(error.Exception, "Exception for ModelState error with Key: {Key}", key);
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("ModelState Key: {Key} is valid.", key);
+                }
+            }
+        }
 
-
-
+    
 
 
 
