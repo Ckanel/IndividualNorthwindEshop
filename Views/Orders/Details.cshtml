@@ -1,4 +1,4 @@
-﻿@*  @model CommonData.Models.Order
+﻿@model CommonData.Models.Order
 
 @{
     ViewData["Title"] = "Order Details";
@@ -33,62 +33,7 @@
                     @Html.DisplayFor(model => model.ShipCountry)
                 </dd>
 
-                <!-- Additional fields here -->
-
-                <dt class="col-sm-4">Customer ID:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.Customer.CustomerId)</dd>
-
-                <dt class="col-sm-4">Employee ID:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.Employee.EmployeeId)</dd>
-
-                <dt class="col-sm-4">Courier ID:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.ShipViaNavigation.ShipperId)</dd>
-            </dl>
-        </div>
-        <div class="card-footer">
-            <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-        </div>
-    </div>
-</div>
-
- *@
-
-@model CommonData.Models.Order
-
-@{
-    ViewData["Title"] = "Order Details";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-
-<div class="container my-5">
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3>Order Details</h3>
-        </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-4">Date Ordered:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.OrderDate)</dd>
-
-                <dt class="col-sm-4">Date Shipped:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.ShippedDate)</dd>
-
-                <dt class="col-sm-4">Freight:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.Freight)</dd>
-
-                <dt class="col-sm-4">Ship Name:</dt>
-                <dd class="col-sm-8">@Html.DisplayFor(model => model.ShipName)</dd>
-
-                <dt class="col-sm-4">Address:</dt>
-                <dd class="col-sm-8">
-                    @Html.DisplayFor(model => model.ShipAddress)<br>
-                    @Html.DisplayFor(model => model.ShipCity),
-                    @Html.DisplayFor(model => model.ShipRegion)
-                    @Html.DisplayFor(model => model.ShipPostalCode)<br>
-                    @Html.DisplayFor(model => model.ShipCountry)
-                </dd>
-
-                <!-- Additional fields here -->
+              
 
                 <dt class="col-sm-4">Customer ID:</dt>
                 <dd class="col-sm-8">@Html.DisplayFor(model => model.Customer.CustomerId)</dd>

@@ -24,7 +24,7 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
             _emailSender = emailSender;
             _logger = logger;
         }
-        
+
         [BindProperty]
         public InputModel Input { get; set; }
 
@@ -49,18 +49,19 @@ namespace IndividualNorthwindEshop.Areas.Identity.Pages.Account
                 ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
                 return Page();
             }
-
-            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var userId = user.Id;
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            var callbackUrl = $"{Request.Scheme}://{Request.Host.Value}/Identity/Account/ConfirmEmail?code={code}";
+            var callbackUrl = $"{Request.Scheme}://{Request.Host.Value}/Identity/Account/ConfirmEmail?userId={userId}&code={code}";
 
-            await _emailSender.SendEmailAsync(
-              Input.Email,
-                "Confirm your email",
-                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
-            _logger.LogInformation("Resent password reset email to {Email}", Input.Email);
-            
+            _logger.LogInformation("Generated email confirmation URL: {Url}", callbackUrl);
+            var emailBody = $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>";
+            _logger.LogInformation("Email body: {EmailBody}", emailBody);
+            await _emailSender.SendEmailAsync(Input.Email, "Confirm your email", emailBody);
+
+
+
             ModelState.AddModelError(string.Empty, "Verification email sent. Please check your email.");
             return Page();
         }
