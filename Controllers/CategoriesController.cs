@@ -9,6 +9,7 @@ using CommonData.Data;
 using CommonData.Models;
 using IndividualNorthwindEshop.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Data.SqlClient;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -73,7 +74,7 @@ namespace IndividualNorthwindEshop.Controllers
         // POST: Categories/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see 
-       
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Employee,Manager")]
@@ -90,12 +91,36 @@ namespace IndividualNorthwindEshop.Controllers
                     }
                 }
 
-                _context.Add(category);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _context.Add(category);
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Category created successfully.";
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is SqlException sqlEx &&
+                        sqlEx.Message.Contains("String or binary data would be truncated"))
+                    {
+                        TempData["ErrorMessage"] = "The category name is too long. Please shorten it to 15 characters or less.";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "An error occurred while saving the category. Please try again.";
+                    }
+                    // Log the exception
+                    _logger.LogError(ex, "An error occurred while creating a category.");
+
+                    
+                   
+                }
             }
+
             return View(category);
         }
+
+
 
 
         // GET: Categories/Edit/5
@@ -166,6 +191,7 @@ namespace IndividualNorthwindEshop.Controllers
 
                     _logger.LogInformation($"Updating category with id {category.CategoryId}");
                     _context.Update(category);
+                    TempData["SuccessMessage"] = "Category updated successfully.";
                     await _context.SaveChangesAsync();
                     _logger.LogInformation($"Successfully updated category {category.CategoryId}");
                 }
@@ -183,7 +209,18 @@ namespace IndividualNorthwindEshop.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("String or binary data would be truncated"))
+                    {
+                        TempData["ErrorMessage"] = "The category name is too long. Please shorten it to 15 characters or less.";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "An error occurred while saving the category. Please try again.";
+                    }
+                    _logger.LogError(ex, $"Error updating category with id {category.CategoryId}");
+                }
             }
 
             _logger.LogWarning("Model state is not valid.");

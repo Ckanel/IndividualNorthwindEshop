@@ -239,17 +239,19 @@ namespace IndividualNorthwindEshop.Controllers
         }
 
 
-
-    
         [Authorize(Roles = "Manager,Employee")]
-        public async Task<IActionResult> HandleOrder(int id)
+public async Task<IActionResult> HandleOrder(int id)
+{
+    bool comingFromUpdate = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"];
+
+    // Clear the TempData right away after using it
+    TempData.Remove("UpdateSuccess");
+
+    // Start the transaction
+    using (var transaction = await _context.Database.BeginTransactionAsync())
+    {
+        try
         {
-            bool comingFromUpdate = TempData.ContainsKey("UpdateSuccess") && (bool)TempData["UpdateSuccess"];
-
-            // Clear the TempData right away after using it
-            TempData.Remove("UpdateSuccess");
-            TempData.Remove("OperationCancelled");
-
             var order = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
@@ -298,30 +300,20 @@ namespace IndividualNorthwindEshop.Controllers
                     {
                         // Set ReservedStock to the quantity
                         // since this is the first time we are handling the order.
-
                         product.ReservedStock = orderDetail.Quantity;
                     }
                 }
 
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    _logger.LogError(ex, "Concurrency conflict occurred on handling order with ID: {OrderId}", id);
-                    TempData["ErrorMessage"] = "A concurrency error occurred. Please try again.";
-                    return RedirectToAction("PendingOrders");
-                }
+                await _context.SaveChangesAsync();
             }
 
             var shippers = await _context.Shippers
-        .Select(s => new CustomSelectListItem
-        {
-            Value = s.ShipperId.ToString(),
-            Text = s.CompanyName
-        })
-        .ToListAsync();
+                .Select(s => new CustomSelectListItem
+                {
+                    Value = s.ShipperId.ToString(),
+                    Text = s.CompanyName
+                })
+                .ToListAsync();
 
             var viewModel = new HandleOrderViewModel
             {
@@ -339,8 +331,34 @@ namespace IndividualNorthwindEshop.Controllers
                 Shippers = shippers
             };
 
+            // Commit the transaction
+            await transaction.CommitAsync();
+
             return View(viewModel);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogError(ex, "Concurrency conflict occurred while handling order with ID: {OrderId}", id);
+            await transaction.RollbackAsync();
+            TempData["ErrorMessage"] = "A concurrency error occurred. Please try again.";
+            return RedirectToAction("PendingOrders");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while handling order with ID: {OrderId}", id);
+            await transaction.RollbackAsync();
+            TempData["ErrorMessage"] = "An error occurred while handling the order. Please try again.";
+            return RedirectToAction("PendingOrders");
+        }
+    }
+}
+
+
+
+
+
+
+
 
 
 
@@ -416,6 +434,7 @@ namespace IndividualNorthwindEshop.Controllers
                             {
                                 product.UnitsInStock -= orderDetail.Quantity;
                                 product.ReservedStock -= orderDetail.Quantity;
+                                
                             }
                         }
 
@@ -458,7 +477,8 @@ namespace IndividualNorthwindEshop.Controllers
                     // Retry the update operation
                     order.Status = OrderStatus.Completed;
                     order.HandlingStartTime = null;
-
+                    order.ShippedDate = DateTime.Now;
+                    order.ShipVia = selectedShipperId;
                     _context.Entry(order).State = EntityState.Modified;
                     try
                     {
@@ -482,13 +502,11 @@ namespace IndividualNorthwindEshop.Controllers
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "An error occurred while closing the order with ID: {OrderId}", id);
                     TempData["ErrorMessage"] = "An error occurred while closing the order. Please try again.";
-                    return RedirectToAction("HandleOrder", new { id = order?.OrderId ?? 0 });
+                    return RedirectToAction("HandleOrder", new { id = id });
                 }
             }
         }
-
-
-      
+       
 
 
         private void LogAndNotifyOrderCompletion(Order order)
@@ -510,82 +528,85 @@ namespace IndividualNorthwindEshop.Controllers
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> UpdateOrderQuantities(int id, List<UpdatedOrderDetailViewModel> updatedOrderDetails)
         {
-            var order = await _context.Orders
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Product)
-                .FirstOrDefaultAsync(o => o.OrderId == id);
-
-            if (order == null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return NotFound();
-            }
-
-            if (order.Status != OrderStatus.BeingHandled)
-            {
-                TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
-
-
-
-            var currentUser = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
-            _logger.LogInformation("EmployeeId: {EmployeeId}", currentUser?.Value);
-            if (currentUser == null)
-            {
-                TempData["ErrorMessage"] = "Unable to retrieve the current employee's ID.";
-                return RedirectToAction("PendingOrders");
-            }
-            else
-            {
-                var currentEmployeeId = _context.Users.Where(u => u.Id == currentUser.Value).Select(u => u.EmployeeId).FirstOrDefault();
-                _logger.LogInformation("EmployeeId: {EmployeeId}", currentEmployeeId.Value);
-
-
-                if (order.EmployeeId != currentEmployeeId)
+                try
                 {
-                    TempData["ErrorMessage"] = "You are not authorized to update this order.";
+                    var order = await _context.Orders
+                        .Include(o => o.OrderDetails)
+                            .ThenInclude(od => od.Product)
+                        .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                    if (order == null)
+                    {
+                        return NotFound();
+                    }
+
+                    if (order.Status != OrderStatus.BeingHandled)
+                    {
+                        TempData["ErrorMessage"] = "Order quantities can only be updated for orders in the 'Being Reviewed' status.";
+                        return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                    }
+
+                    var currentUser = User.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
+                    _logger.LogInformation("EmployeeId: {EmployeeId}", currentUser?.Value);
+                    if (currentUser == null)
+                    {
+                        TempData["ErrorMessage"] = "Unable to retrieve the current employee's ID.";
+                        return RedirectToAction("PendingOrders");
+                    }
+                    else
+                    {
+                        var currentEmployeeId = _context.Users.Where(u => u.Id == currentUser.Value).Select(u => u.EmployeeId).FirstOrDefault();
+                        _logger.LogInformation("EmployeeId: {EmployeeId}", currentEmployeeId.Value);
+
+                        if (order.EmployeeId != currentEmployeeId)
+                        {
+                            TempData["ErrorMessage"] = "You are not authorized to update this order.";
+                            return RedirectToAction("HandleOrder", new { id = order.OrderId });
+                        }
+                    }
+
+                    foreach (var updatedOrderDetail in updatedOrderDetails)
+                    {
+                        var orderDetail = order.OrderDetails.FirstOrDefault(od => od.ProductId == updatedOrderDetail.ProductId);
+                        if (orderDetail != null)
+                        {
+                            var product = orderDetail.Product;
+                            if (product != null)
+                            {
+                                _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
+                            }
+                        }
+                    }
+
+                    UpdateOrderDetails(order, updatedOrderDetails);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("Order quantities updated for order with ID: {OrderId}", order.OrderId);
+                    TempData["UpdateSuccess"] = true;
                     return RedirectToAction("HandleOrder", new { id = order.OrderId });
                 }
-            }
-            foreach (var updatedOrderDetail in updatedOrderDetails)
-            {
-                var orderDetail = order.OrderDetails.FirstOrDefault(od => od.ProductId == updatedOrderDetail.ProductId);
-                if (orderDetail != null)
+                catch (DbUpdateConcurrencyException ex)
                 {
-                    var product = orderDetail.Product;
-                    if (product != null)
-                    {
-                        _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
-                    }
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "A concurrency conflict occurred while updating order quantities for order with ID: {OrderId}", id);
+                    TempData["ErrorMessage"] = "A concurrency conflict occurred while updating the order quantities. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "An error occurred while updating order quantities for order with ID: {OrderId}", id);
+                    TempData["ErrorMessage"] = "An error occurred while updating order quantities. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id });
                 }
             }
-
-            try
-            {
-                UpdateOrderDetails(order, updatedOrderDetails);
-                await _context.SaveChangesAsync();
-
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Order quantities updated for order with ID: {OrderId}", order.OrderId);
-                TempData["SuccessMessage"] = "Order quantities updated successfully.";
-                TempData["UpdateSuccess"] = true;
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "A concurrency conflict occurred while updating order quantities for order with ID: {OrderId}", id);
-                TempData["ErrorMessage"] = "A concurrency conflict occurred while updating the order quantities. Please try again.";
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while updating order quantities for order with ID: {OrderId}", id);
-                TempData["ErrorMessage"] = "An error occurred while updating order quantities. Please try again.";
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
         }
+
+
 
 
 
@@ -652,68 +673,77 @@ namespace IndividualNorthwindEshop.Controllers
 
 
 
+
+
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> CancelOrder(int id)
         {
-            var order = await _context.Orders
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Product)
-                .FirstOrDefaultAsync(o => o.OrderId == id);
-
-            if (order == null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return NotFound();
-            }
-
-            if (order.Status != OrderStatus.BeingHandled)
-            {
-                order.Status = OrderStatus.BeingHandled;
-                order.HandlingStartTime = DateTime.Now;
-                await _context.SaveChangesAsync();
-            }
-
-
-
-            var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
-            var currentProducts = await _context.Products
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToListAsync();
-
-            foreach (var orderDetail in order.OrderDetails)
-            {
-                var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
-                if (product != null)
+                try
                 {
-                    _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
+                    var order = await _context.Orders
+                        .Include(o => o.OrderDetails)
+                            .ThenInclude(od => od.Product)
+                        .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                    if (order == null)
+                    {
+                        return NotFound();
+                    }
+
+                    if (order.Status != OrderStatus.BeingHandled)
+                    {
+                        order.Status = OrderStatus.BeingHandled;
+                        order.HandlingStartTime = DateTime.Now;
+                        await _context.SaveChangesAsync();
+                    }
+
+                    var productIds = order.OrderDetails.Select(od => od.ProductId).ToList();
+                    var currentProducts = await _context.Products
+                        .Where(p => productIds.Contains(p.ProductId))
+                        .ToListAsync();
+
+                    foreach (var orderDetail in order.OrderDetails)
+                    {
+                        var product = currentProducts.FirstOrDefault(p => p.ProductId == orderDetail.ProductId);
+                        if (product != null)
+                        {
+                            _context.Entry(product).Property("Timestamp").OriginalValue = product.Timestamp;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    RevertProductStocks(order, currentProducts);
+                    await _context.SaveChangesAsync();
+
+                    _ = SendOrderCancellationNotification(order);
+                    _logger.LogInformation("Order with ID: {OrderId} has been cancelled.", order.OrderId);
+
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Transaction committed successfully for order cancellation with ID: {OrderId}", order.OrderId);
+                    return RedirectToAction("OrderCancelled", new { id = order.OrderId });
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogError(ex, "A concurrency conflict occurred while cancelling the order with ID: {OrderId}", id);
+                    await transaction.RollbackAsync();
+                    TempData["ErrorMessage"] = "A concurrency conflict occurred while cancelling the order. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id});
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while cancelling the order with ID: {OrderId}", id);
+                    await transaction.RollbackAsync();
+                    TempData["ErrorMessage"] = "An error occurred while cancelling the order. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id });
                 }
             }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-
-                RevertProductStocks(order, currentProducts);
-                await _context.SaveChangesAsync();
-
-                _ = SendOrderCancellationNotification(order);
-                _logger.LogInformation("Order with ID: {OrderId} has been cancelled.", order.OrderId);
-
-                return RedirectToAction("OrderCancelled", new { id = order.OrderId });
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "A concurrency conflict occurred while cancelling the order with ID: {OrderId}", id);
-                TempData["ErrorMessage"] = "A concurrency conflict occurred while cancelling the order. Please try again.";
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while cancelling the order with ID: {OrderId}", id);
-                TempData["ErrorMessage"] = "An error occurred while cancelling the order. Please try again.";
-                return RedirectToAction("HandleOrder", new { id = order.OrderId });
-            }
         }
+
+
 
         private void RevertProductStocks(Order order, List<Product> currentProducts)
         {
@@ -747,9 +777,9 @@ namespace IndividualNorthwindEshop.Controllers
             order.Status = OrderStatus.Cancelled;
             order.HandlingStartTime = null;
             order.CancellationReason = cancellationReason;
-
+            TempData["SuccessMessage"] = "The order was successfully cancelled.";
             await _context.SaveChangesAsync();
-
+            
             return RedirectToAction("PendingOrders", "Orders");
         }
 
@@ -760,12 +790,18 @@ namespace IndividualNorthwindEshop.Controllers
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> OrderCancelled(int id)
         {
+            _logger.LogInformation("Retrieving order with ID: {OrderId} for cancellation view", id);
+
             var order = await _context.Orders.FindAsync(id);
 
             if (order == null)
             {
+                _logger.LogWarning("Order with ID: {OrderId} not found for cancellation view", id);
                 return NotFound();
             }
+
+            _logger.LogInformation("Order with ID: {OrderId} retrieved successfully for cancellation view", id);
+
 
             return View(order);
         }
@@ -787,41 +823,72 @@ namespace IndividualNorthwindEshop.Controllers
 
             _context.SaveChanges();
         }
-
-
         [HttpPost]
         [Authorize(Roles = "Manager,Employee")]
         public async Task<IActionResult> RevertToPending(int id)
         {
-            var order = await _context.Orders
-        .Include(o => o.OrderDetails)
-        .FirstOrDefaultAsync(o => o.OrderId == id);
-
-            if (order == null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return NotFound();
-            }
-
-            foreach (var orderDetail in order.OrderDetails)
-            {
-                var product = await _context.Products.FindAsync(orderDetail.ProductId);
-                if (product != null)
+                try
                 {
-                    product.UnitsInStock += orderDetail.Quantity;
-                    product.ReservedStock -= orderDetail.Quantity;
+                    _logger.LogInformation("Attempting to retrieve order with ID: {OrderId}", id);
+                    var order = await _context.Orders
+                        .Include(o => o.OrderDetails)
+                        .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                    if (order == null)
+                    {
+                        _logger.LogWarning("Order with ID: {OrderId} not found", id);
+                        return NotFound();
+                    }
+
+                    _logger.LogInformation("Order with ID: {OrderId} retrieved successfully", id);
+
+                    foreach (var orderDetail in order.OrderDetails)
+                    {
+                        var product = await _context.Products.FindAsync(orderDetail.ProductId);
+                        if (product != null)
+                        {
+                            _logger.LogInformation("Updating ReservedStock for ProductId: {ProductId} by decrementing {Quantity}", product.ProductId, orderDetail.Quantity);
+                            product.ReservedStock -= orderDetail.Quantity;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Product with ID: {ProductId} not found while updating ReservedStock", orderDetail.ProductId);
+                        }
+                    }
+
+                    _logger.LogInformation("Updating order status and employee details for OrderId: {OrderId}", id);
+                    order.Status = OrderStatus.Pending;
+                    order.EmployeeId = null;
+                    order.HandlingStartTime = null;
+
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Order with ID: {OrderId} updated successfully and changes saved", id);
+                    await transaction.CommitAsync();
+
+                    return RedirectToAction("PendingOrders", "Orders");
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogError(ex, "A concurrency conflict occurred while cancelling the order with ID: {OrderId}", id);
+                    await transaction.RollbackAsync();
+                    TempData["ErrorMessage"] = "A concurrency conflict occurred while cancelling the order. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while cancelling the order with ID: {OrderId}", id);
+                    await transaction.RollbackAsync();
+                    TempData["ErrorMessage"] = "An error occurred while cancelling the order. Please try again.";
+                    return RedirectToAction("HandleOrder", new { id = id });
                 }
             }
-
-
-            order.Status = OrderStatus.Pending;
-
-            order.HandlingStartTime = null;
-
-            await _context.SaveChangesAsync();
-
-            // Redirect to the pending orders page or any other appropriate page
-            return RedirectToAction("PendingOrders", "Orders");
         }
+
+
+
+        
 
 
 

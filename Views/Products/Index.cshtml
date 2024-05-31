@@ -13,6 +13,18 @@
     <p>
         <a asp-action="Create" class="btn btn-primary">Create New</a>
     </p>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            });
+        </script>
+    }
 }
 
 <form method="get" asp-action="Index">

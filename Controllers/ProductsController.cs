@@ -9,6 +9,7 @@ using CommonData.Data;
 using CommonData.Models;
 using Microsoft.AspNetCore.Authorization;
 using X.PagedList;
+using Microsoft.Data.SqlClient;
 
 namespace IndividualNorthwindEshop.Controllers
 {
@@ -145,14 +146,22 @@ namespace IndividualNorthwindEshop.Controllers
                     }
 
                     _context.Add(product);
+                    TempData["SuccessMessage"] = "Product created successfully.";
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("Product {ProductId} created successfully.", product.ProductId);
                     return RedirectToAction(nameof(Index));
                 }
-                catch (Exception ex)
+                catch (DbUpdateException ex)
                 {
-                    _logger.LogError(ex, "An error occurred while creating the product {ProductId}.", product.ProductId);
-                    ModelState.AddModelError("", "Unable to create product. Please try again later.");
+                    if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("String or binary data would be truncated"))
+                    {
+                        TempData["ErrorMessage"] = "The product information is too long. Please shorten the relevant fields.";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "An error occurred while saving the product. Please try again.";
+                    }
+                    _logger.LogError(ex, $"Error creating product {product.ProductId}");
                 }
             }
 
@@ -229,11 +238,15 @@ namespace IndividualNorthwindEshop.Controllers
 
                     _logger.LogInformation($"Updating product with id {product.ProductId}");
                     _context.Update(product);
+                    TempData["SuccessMessage"] = "Product updated successfully.";
                     await _context.SaveChangesAsync();
                     _logger.LogInformation($"Successfully updated product {product.ProductId}");
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException ex)
                 {
+                    _logger.LogError(ex, $"Concurrency error updating Product with id  {product.ProductId}");
+
                     if (!ProductExists(product.ProductId))
                     {
                         _logger.LogWarning($"Product with id {product.ProductId} does not exist.");
@@ -241,12 +254,22 @@ namespace IndividualNorthwindEshop.Controllers
                     }
                     else
                     {
-                        _logger.LogError(ex, $"Concurrency error updating product with id {product.ProductId}");
-                        ModelState.AddModelError(string.Empty, "The record you attempted to edit was modified by another user after you got the original value. The edit operation was aborted.");
-                        return View(product);
+                        throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("String or binary data would be truncated"))
+                    {
+                        TempData["ErrorMessage"] = "The Product name is too long. Please shorten it to 40 characters or less.";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "An error occurred while saving the category. Please try again.";
+                    }
+                    _logger.LogError(ex, $"Error updating Product with id {product.ProductId}");
+                }
+               
             }
 
             _logger.LogWarning("Model state is not valid.");

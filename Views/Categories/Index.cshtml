@@ -5,6 +5,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+
 <h2 class="text-center my-4">Categories</h2>
 
 @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
@@ -12,6 +13,18 @@
     <div class="text-right mb-3">
         <a asp-action="Create" class="btn btn-primary">Create New</a>
     </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            });
+        </script>
+    }
 }
 
 <div class="row">
