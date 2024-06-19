@@ -1,0 +1,143 @@
+﻿@model HandleOrderViewModel
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - My ASP.NET Core App</title>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<!-- Page Header -->
+<h2 class="text-2xl font-semibold mb-4">Handle Order</h2>
+
+<!-- Order Details Section -->
+<div class="space-y-4">
+    <h4 class="text-xl font-semibold">Order Details</h4>
+    <hr />
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+        <!-- Order ID -->
+        <div>
+            <dt class="font-medium">Order ID</dt>
+            <dd>@Model.Order.OrderId</dd>
+        </div>
+
+        <!-- Customer -->
+        <div>
+            <dt class="font-medium">Customer</dt>
+            @if (Model.Order.Customer == null)
+            {
+                <dd>Guest Customer</dd>
+            }
+            else
+            {
+                <dd>@(!string.IsNullOrEmpty(Model.Order.Customer.CompanyName) ? Model.Order.Customer.CompanyName : Model.Order.Customer.ContactName)</dd>
+            }
+        </div>
+
+        <!-- Email -->
+        <div>
+            <dt class="font-medium">Email</dt>
+            <dd>@Model.Order.GuestEmail</dd>
+        </div>
+
+        <!-- Shipping Address -->
+        <div>
+            <dt class="font-medium">Shipping Address</dt>
+            <dd>@Model.Order.ShipAddress</dd>
+        </div>
+
+        <!-- Shipping City -->
+        <div>
+            <dt class="font-medium">Shipping City</dt>
+            <dd>@Model.Order.ShipCity</dd>
+        </div>
+
+        <!-- Postal Code -->
+        <div>
+            <dt class="font-medium">Postal Code</dt>
+            <dd>@Model.Order.ShipPostalCode</dd>
+        </div>
+
+        <!-- Order Date -->
+        <div>
+            <dt class="font-medium">Order Date</dt>
+            <dd>@Model.Order.OrderDate.ToString("yyyy-MM-dd HH:mm")</dd>
+        </div>
+    </dl>
+
+    <!-- Select Shipper -->
+    <div>
+        <form method="post" asp-action="CloseOrder" asp-route-id="@Model.Order.OrderId" class="flex items-center space-x-2">
+        <dt class="font-medium">Select Shipper</dt>
+        <select asp-for="SelectedShipperId" asp-items="@(new SelectList(Model.Shippers, "Value", "Text"))" class="mt-1 block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"></select>
+        <button type="submit" class="btn btn-primary mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="return confirmOrderCompletion();">Complete Order</button>
+        </form>
+    </div>
+</div>
+
+<!-- Order Items Section -->
+<div class="mt-6">
+    <h4 class="text-xl font-semibold">Order Items</h4>
+    <table class="mt-2 w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Units in Stock</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reserved Stock</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            @foreach (var item in Model.Order.OrderDetails)
+            {
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">@item.Product?.ProductName</td>
+                    <td class="px-6 py-4 whitespace-nowrap">@item.Quantity</td>
+                    <td class="px-6 py-4 whitespace-nowrap">@item.UnitPrice.ToString("C2")</td>
+                    <td class="px-6 py-4 whitespace-nowrap">@((item.Quantity * item.UnitPrice).ToString("C2"))</td>
+                    <td class="px-6 py-4 whitespace-nowrap">@item.Product?.UnitsInStock</td>
+                    <td class="px-6 py-4 whitespace-nowrap">@item.Product?.ReservedStock</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Action Buttons Section -->
+<div class="flex flex-wrap gap-2 mt-6">
+    <!-- Cancel Order Form -->
+    <form id="cancelOrderForm_@Model.Order.OrderId" method="post" asp-action="CancelOrder" asp-controller="Orders" asp-route-id="@Model.Order.OrderId">
+        <button type="button" onclick="confirmCancelOrder(@Model.Order.OrderId);" class="btn btn-danger bg-red-500 text-white px-4 py-2 rounded">Cancel Order</button>
+    </form>
+
+    <!-- Edit Order Quantities Form -->
+    <form method="get" asp-action="EditOrderQuantities" asp-route-id="@Model.Order.OrderId">
+        <button type="submit" class="btn btn-secondary bg-gray-500 text-white px-4 py-2 rounded">Edit Order</button>
+    </form>
+
+    <!-- Revert to Pending Form -->
+    <form asp-action="RevertToPending" asp-route-id="@Model.Order.OrderId" method="post">
+        <button type="submit" class="btn btn-secondary bg-gray-500 text-white px-4 py-2 rounded">Back to Pending</button>
+    </form>
+</div>
+
+<script>
+    function confirmCancelOrder(orderId) {
+        if (confirm("Are you sure you want to cancel the order?")) {
+            var form = document.getElementById('cancelOrderForm_' + orderId);
+            if (form) {
+                console.log('Form found. Submitting now...');
+                form.submit();
+            } else {
+                console.error('Form not found!');
+            }
+        }
+    }
+
+    function confirmOrderCompletion() {
+        return confirm("Are you sure you want to complete this order?");
+    }
+</script>
+

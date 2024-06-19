@@ -1,0 +1,66 @@
+﻿@model HomePageViewModel
+
+@{
+    ViewData["Title"] = "Home Page";
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+}
+
+<div class="text-center py-10 bg-gray-100">
+    <h1 class="text-4xl font-bold text-gray-800">Welcome to Our E-Commerce Store!</h1>
+    <p class="text-xl mt-4 text-gray-600">Your one-stop shop for all the latest products.</p>
+</div>
+
+<div class="container mx-auto px-4 mt-10">
+    <!-- Categories and Products -->
+    @foreach (var category in Model.Categories)
+    {
+        <div class="mb-10">
+            <h2 class="text-3xl font-semibold mb-4 text-center text-gray-800">@category.CategoryName</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border mb-6">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 border-b text-left">Photo</th>
+                            <th class="py-2 px-4 border-b text-left">Name</th>
+                            <th class="py-2 px-4 border-b text-left">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in category.Products)
+                        {
+                            <tr>
+                                <td class="py-2 px-4 border-b">
+                                    @if (product.Photo != null)
+                                    {
+                                        <img class="h-16 object-cover" src="data:image/jpeg;base64,@Convert.ToBase64String(product.Photo)" alt="@product.ProductName">
+                                    }
+                                    else
+                                    {
+                                        <img class="h-16 object-cover" src="/images/default_product.png" alt="@product.ProductName">
+                                    }
+                                </td>
+                                <td class="py-2 px-4 border-b">
+                                    <span class="text-gray-700">@product.ProductName</span>
+                                </td>
+                                <td class="py-2 px-4 border-b">
+                                    <span class="text-gray-600">@($"{product.UnitPrice:C2}")</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="text-center mt-4">
+                    <a href="@Url.Action("Index", "Categories")?category=@category.CategoryId"
+                       class="inline-block bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700">View our @category.CategoryName</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="text-center mt-8 mb-10">
+    <a href="@Url.Action("Index", "Products")"
+       class="inline-block bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700">View All Products</a>
+</div>
+

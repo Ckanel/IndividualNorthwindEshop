@@ -1,0 +1,183 @@
+﻿@model X.PagedList.IPagedList<CommonData.Models.Product>
+@using X.PagedList.Mvc.Core;
+
+@{
+    ViewData["Title"] = "Products";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 class="text-center my-4">Products</h2>
+
+@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+{
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </p>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            });
+        </script>
+    }
+}
+
+<form method="get" asp-action="Index">
+    <div class="form-group row">
+        <div class="col-md-3 mb-2">
+            <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search Product Name" />
+        </div>
+        <div class="col-md-3 mb-2">
+            <input type="number" step="0.01" name="minPrice" value="@ViewContext.HttpContext.Request.Query["minPrice"]" class="form-control" placeholder="Min Price" />
+        </div>
+        <div class="col-md-3 mb-2">
+            <input type="number" step="0.01" name="maxPrice" value="@ViewContext.HttpContext.Request.Query["maxPrice"]" class="form-control" placeholder="Max Price" />
+        </div>
+        <div class="col-md-3 mb-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </div>
+</form>
+
+<div class="mb-4">
+    <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" class="btn btn-secondary mr-2">Sort by Name</a>
+    <a asp-action="Index" asp-route-sortOrder="@ViewData["PriceSortParm"]" class="btn btn-secondary">Sort by Price</a>
+</div>
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        if (!item.Discontinued)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="@Url.Action("GetProductPhoto", "Products", new { id = item.ProductId })" alt="@item.ProductName" class="card-img-top">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.ProductName</h5>
+                        <p class="card-text">Price: @string.Format("{0:C2}", item.UnitPrice)</p>
+                        <p class="card-text">Category: @item.Category.CategoryName</p>
+                        @if (item.UnitsInStock < 3)
+                        {
+                            <p class="card-text text-danger">Units in stock: @item.UnitsInStock</p>
+                        }
+                        else if (item.UnitsInStock == 0)
+                        {
+                            <p class="card-text text-danger">Out of stock</p>
+                        }
+                        else
+                        {
+                            <p class="card-text">Units in stock: @item.UnitsInStock</p>
+                        }
+                        <div class="d-flex justify-content-between">
+                            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+                            {
+                                <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-warning">Edit</a>
+                                <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
+                                <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
+                            }
+                            else
+                            {
+                                <form method="post" action="@Url.Action("AddToCart", "Cart")">
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <img src="@Url.Action("GetProductPhoto", "Products", new { id = item.ProductId })" alt="@item.ProductName" class="card-img-top">
+                        <div class="card-body">
+                            <h5 class="card-title">@item.ProductName</h5>
+                            <p class="card-text">Price: @string.Format("{0:C2}", item.UnitPrice)</p>
+                            <p class="card-text">Category: @item.Category.CategoryName</p>
+                            @if (item.UnitsInStock < 3)
+                            {
+                                <p class="card-text text-danger">Units in stock: @item.UnitsInStock</p>
+                            }
+                            else if (item.UnitsInStock == 0)
+                            {
+                                <p class="card-text text-danger">Out of stock</p>
+                            }
+                            else
+                            {
+                                <p class="card-text">Units in stock: @item.UnitsInStock</p>
+                            }
+                            @if (item.Discontinued)
+                            {
+                                <p class="card-text text-danger">Discontinued</p>
+                            }
+                            <div class="d-flex justify-content-between">
+                                <a href="@Url.Action("Edit", new { id = item.ProductId })" class="btn btn-sm btn-warning">Edit</a>
+                                <a href="@Url.Action("Details", new { id = item.ProductId })" class="btn btn-info">Details</a>
+                                <a href="@Url.Action("Delete", new { id = item.ProductId })" class="btn btn-danger">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    }
+
+    <div class="d-flex justify-content-center mt-4">
+        @Html.PagedListPager(Model, page => Url.Action("Index", new { pageNumber = page, sortOrder = ViewData["CurrentSort"], currentFilter = ViewData["CurrentFilter"], minPrice = ViewContext.HttpContext.Request.Query["minPrice"], maxPrice = ViewContext.HttpContext.Request.Query["maxPrice"] }), new PagedListRenderOptions
+   {
+       DisplayEllipsesWhenNotShowingAllPageNumbers = true,
+       DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+       DisplayLinkToLastPage = PagedListDisplayMode.Always,
+       DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+       DisplayLinkToNextPage = PagedListDisplayMode.Always,
+       LinkToFirstPageFormat = "First",
+       LinkToPreviousPageFormat = "Previous",
+       LinkToNextPageFormat = "Next",
+       LinkToLastPageFormat = "Last",
+       MaximumPageNumbersToDisplay = 5,
+       UlElementClasses = new[] { "pagination", "justify-content-center" },
+       LiElementClasses = new[] { "page-item" },
+       PageClasses = new[] { "page-link" }
+   })
+    </div>
+</div>
+
+<style>
+    .pagination .page-item .page-link {
+        color: #007bff;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        padding: .5rem .75rem;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+    }
+
+    .pagination .page-item.active .page-link {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item .page-link:hover {
+        color: #0056b3;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+</style>
+

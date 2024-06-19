@@ -1,0 +1,33 @@
+﻿@model List<CommonData.Models.Customer>
+
+<h2>Customer Search Results</h2>
+
+@if (Model.Count > 0)
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>Company Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in Model)
+            {
+                <tr>
+                    <td>@customer.CustomerId</td>
+                    <td>@customer.CompanyName</td>
+                    <td>
+                        <a href="@Url.Action("CustomerInvoices", new { customerId = customer.CustomerId })">View Invoices</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No customers found.</p>
+}
+

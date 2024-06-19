@@ -1,0 +1,111 @@
+﻿@model CommonData.Models.Employee
+
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1 class="text-2xl font-bold mb-4">Edit Employee</h1>
+
+<div class="bg-white p-6 rounded shadow-md">
+    <h4 class="text-xl font-semibold mb-4">Employee Details</h4>
+    <hr class="mb-6" />
+    <form asp-action="Edit" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="text-red-500 mb-4"></div>
+        <input type="hidden" asp-for="EmployeeId" />
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-group">
+                <label asp-for="LastName" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="LastName" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="LastName" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FirstName" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="FirstName" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="FirstName" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Title" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="Title" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="Title" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TitleOfCourtesy" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="TitleOfCourtesy" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="TitleOfCourtesy" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BirthDate" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="BirthDate" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="BirthDate" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HireDate" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="HireDate" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="HireDate" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Address" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="Address" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="Address" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="City" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="City" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="City" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Region" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="Region" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="Region" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PostalCode" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="PostalCode" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="PostalCode" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Country" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="Country" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="Country" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HomePhone" class="block text-sm font-medium mb-1"></label>
+                <input asp-for="HomePhone" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="HomePhone" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <input type="hidden" asp-for="Extension" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Photo" class="block text-sm font-medium mb-1">Photo</label>
+                <input asp-for="Photo" type="file" name="photo" class="rounded border-gray-300 w-full" />
+                <span asp-validation-for="Photo" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Notes" class="block text-sm font-medium mb-1"></label>
+                <textarea asp-for="Notes" class="rounded border-gray-300 w-full"></textarea>
+                <span asp-validation-for="Notes" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ReportsTo" class="block text-sm font-medium mb-1"></label>
+                <select asp-for="ReportsTo" class="rounded border-gray-300 w-full" asp-items="ViewBag.ReportsTo"></select>
+                <span asp-validation-for="ReportsTo" class="text-red-500 text-sm"></span>
+            </div>
+            <div class="form-group">
+                <input type="hidden" asp-for="PhotoPath" />
+            </div>
+        </div>
+        
+        <div class="form-group mt-4">
+            <input type="submit" value="Save" class="btn btn-primary" />
+            <a asp-action="Index" class="ml-2 text-blue-500 hover:underline">Back to List</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

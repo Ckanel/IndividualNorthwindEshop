@@ -1,0 +1,54 @@
+﻿ @model IEnumerable<CommonData.Models.Category>
+
+@{
+    ViewData["Title"] = "Categories";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<h2 class="text-center my-4">Categories</h2>
+
+@if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+{
+    <div class="text-right mb-3">
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@TempData["SuccessMessage"]'
+                });
+            });
+        </script>
+    }
+}
+
+<div class="row">
+    @foreach (var item in Model)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <a href="@Url.Action("ProductsByCategories", new { categoryId = item.CategoryId })">
+                    <img src="@Url.Action("GetEmployeePhoto", "Categories", new { id = item.CategoryId })" alt="@item.CategoryName" class="card-img-top">
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title">@item.CategoryName</h5>
+                    <p class="card-text">@item.Description</p>
+                    <div class="d-flex justify-content-between">
+                        @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+                        {
+                            <a href="@Url.Action("Edit", new { id = item.CategoryId })" class="btn btn-warning">Edit</a>
+                            <a href="@Url.Action("Details", new { id = item.CategoryId })" class="btn btn-sm btn-info">Details</a>
+                            <a href="@Url.Action("Delete", new { id = item.CategoryId })" class="btn btn-danger">Delete</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

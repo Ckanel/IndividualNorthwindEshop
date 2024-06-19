@@ -1,0 +1,114 @@
+﻿@model List<CommonData.Models.CartItem>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mx-auto p-5">
+        <h2 class="text-2xl font-bold mb-5 text-center">Checkout</h2>
+
+        <!-- Display  cart items -->
+        <table class="table-auto w-full mb-5">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 bg-gray-200 text-left">Product</th>
+                    <th class="px-4 py-2 bg-gray-200 text-left">Quantity</th>
+                    <th class="px-4 py-2 bg-gray-200 text-left">Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="border px-4 py-2">@item.Product.ProductName</td>
+                        <td class="border px-4 py-2">@item.Quantity</td>
+                        <td class="border px-4 py-2">@($"{item.Product.UnitPrice:C2}")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Checkout form -->
+        <form asp-controller="Checkout" asp-action="ProcessOrder" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <div class="mb-4">
+                <label for="CustomerName" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+                <input type="text" id="CustomerName" name="CustomerName" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="GuestEmail" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                <input type="email" id="GuestEmail" name="GuestEmail" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="Address" class="block text-gray-700 text-sm font-bold mb-2">Address:</label>
+                <input type="text" id="Address" name="Address" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="City" class="block text-gray-700 text-sm font-bold mb-2">City:</label>
+                <input type="text" id="City" name="City" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="Country" class="block text-gray-700 text-sm font-bold mb-2">Country:</label>
+                <input type="text" id="Country" name="Country" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="PostalCode" class="block text-gray-700 text-sm font-bold mb-2">Postal Code:</label>
+                <input type="text" id="PostalCode" name="PostalCode" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4">
+                <label for="PhoneNumber" class="block text-gray-700 text-sm font-bold mb-2">Phone Number:</label>
+                <input type="tel" id="PhoneNumber" name="PhoneNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Select Payment Method:</label>
+                <div class="flex items-center">
+                    <label class="mr-4">
+                        <input type="radio" name="paymentMethod" value="cash" checked onclick="togglePaymentDetails()"> Cash
+                    </label>
+                    <label>
+                        <input type="radio" name="paymentMethod" value="card" onclick="togglePaymentDetails()"> Card <span id="cardSymbol" class="ml-2 hidden">💳</span>
+                    </label>
+                </div>
+            </div>
+            <div id="cardDetails" class="mb-4 hidden">
+                <h4 class="text-lg font-bold mb-2">Card Details</h4>
+                <div class="mb-4">
+                    <label for="CardNumber" class="block text-gray-700 text-sm font-bold mb-2">Card Number:</label>
+                    <input type="text" id="CardNumber" name="CardNumber" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="mb-4">
+                    <label for="CardExpiry" class="block text-gray-700 text-sm font-bold mb-2">Expiry Date:</label>
+                    <input type="text" id="CardExpiry" name="CardExpiry" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="mb-4">
+                    <label for="CardCvc" class="block text-gray-700 text-sm font-bold mb-2">CVC:</label>
+                    <input type="text" id="CardCvc" name="CardCvc" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+            </div>
+
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Place Order</button>
+        </form>
+    </div>
+
+    <script>
+        function togglePaymentDetails() {
+            var selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            var cardDetails = document.getElementById('cardDetails');
+            var cardSymbol = document.getElementById('cardSymbol');
+            if (selectedPaymentMethod === 'card') {
+                cardDetails.classList.remove('hidden');
+                cardSymbol.classList.remove('hidden');
+            } else {
+                cardDetails.classList.add('hidden');
+                cardSymbol.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+

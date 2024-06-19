@@ -1,0 +1,122 @@
+﻿@model X.PagedList.IPagedList<CommonData.Models.Customer>
+@using X.PagedList.Mvc.Core;
+
+@{
+    ViewData["Title"] = "Customers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-3">
+    <h2 class="text-center my-4">Customers</h2>
+    @if (User.IsInRole("Employee") || User.IsInRole("Manager"))
+    {
+       
+
+        <form method="get" asp-action="Index">
+            <div class="form-group row">
+                <div class="col-md-9 mb-2">
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search by Company, Contact Name, City" />
+                </div>
+                <div class="col-md-3 mb-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="mb-4">
+            <a asp-action="Index" asp-route-sortOrder="@ViewData["CustomerIdSortParm"]" class="btn btn-secondary mr-2">Sort by Customer ID</a>
+        </div>
+
+        <table class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.First().CompanyName)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().ContactName)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().ContactTitle)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Address)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().City)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Region)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().PostalCode)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Country)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Phone)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Fax)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.CompanyName)</td>
+                        <td>@Html.DisplayFor(modelItem => item.ContactName)</td>
+                        <td>@Html.DisplayFor(modelItem => item.ContactTitle)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Address)</td>
+                        <td>@Html.DisplayFor(modelItem => item.City)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Region)</td>
+                        <td>@Html.DisplayFor(modelItem => item.PostalCode)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Country)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Phone)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Fax)</td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <a asp-action="Edit" asp-route-id="@item.CustomerId" class="btn btn-sm btn-warning">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.CustomerId" class="btn btn-sm btn-info">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.CustomerId" class="btn btn-sm btn-danger">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-center mt-4">
+            @Html.PagedListPager(Model, page => Url.Action("Index", new { pageNumber = page, sortOrder = ViewData["CurrentSort"], currentFilter = ViewData["CurrentFilter"] }), new PagedListRenderOptions
+   {
+       DisplayEllipsesWhenNotShowingAllPageNumbers = true,
+       DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+       DisplayLinkToLastPage = PagedListDisplayMode.Always,
+       DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+       DisplayLinkToNextPage = PagedListDisplayMode.Always,
+       LinkToFirstPageFormat = "First",
+       LinkToPreviousPageFormat = "Previous",
+       LinkToNextPageFormat = "Next",
+       LinkToLastPageFormat = "Last",
+       MaximumPageNumbersToDisplay = 5,
+       UlElementClasses = new[] { "pagination", "justify-content-center" },
+       LiElementClasses = new[] { "page-item" },
+       PageClasses = new[] { "page-link" }
+   })
+        </div>
+    }
+</div>
+
+<style>
+    .pagination .page-item .page-link {
+        color: #007bff;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        padding: .5rem .75rem;
+        margin-left: 0.25rem;
+        margin-right: 0.25rem;
+    }
+
+    .pagination .page-item.active .page-link {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item .page-link:hover {
+        color: #0056b3;
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+</style>
+

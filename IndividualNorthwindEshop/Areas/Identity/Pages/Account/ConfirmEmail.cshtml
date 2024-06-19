@@ -1,0 +1,18 @@
+﻿@page
+@model IndividualNorthwindEshop.Areas.Identity.Pages.Account.ConfirmEmailModel
+@{
+    ViewData["Title"] = "Confirm your email";
+}
+<h1>Confirm your email</h1>
+@if (Model.StatusMessage != null)
+{
+    <div class="alert alert-success">
+        @Model.StatusMessage
+    </div>
+}
+else
+{
+    <p>
+        There was an error confirming your email. Please try again.
+    </p>
+}

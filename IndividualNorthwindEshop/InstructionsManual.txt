@@ -1,0 +1,21 @@
+﻿Project Name : Integrating Extract-Transform-Load (ETL) process in an E-Commerce Web Application.
+Installation Instructions
+1.Restore the NuGet Packages.
+2.Create an Initial Migration.
+3.Update the Database.
+4.Fix the connection strings and the configuration to your desire
+5.Run the ETL database script on a new database called ETLDatabase or create a migration for it as well
+6.Run the application.
+
+If you want to run the application with Data my best recommendation is to change the 
+Northwind script to not include the table creation. Then do pretty much the same steps as previously mentioned.
+
+I don't really know if the shared resources reference gets saved, but the initial resources were described in the dissertation document chapter 5.
+ETL references commondata , individual references ETL and CommonData, ETL unit tests reference ETL. 
+
+Another solution that you could also try and should work is run the Northwind Sql SCript included, 
+create a new Migration. Keep only the changes done to the inital schema and the identity tables the changes are also documented 
+inside of the dissertation chapter 3. After succesfully updating the database and ensuring the modelbuilder is correct (along with dbcontext)
+you can run the application.
+Either way the easiest way to run the application is without data, just by configuring both connection strings 
+and db connections, updating the database and running the application.
